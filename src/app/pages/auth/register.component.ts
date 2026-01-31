@@ -3,35 +3,89 @@ import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angula
 import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/auth.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
   <div class="auth">
-    <h1>Register</h1>
+    <div class="card">
+      <div class="badge">Office Assistant</div>
+      <h1>Register</h1>
+      <p class="lead">Create your account and start building newsletters.</p>
 
-    <form [formGroup]="form" (ngSubmit)="submit()">
-      <label>Email</label>
-      <input type="email" formControlName="email" />
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <label>Email</label>
+        <input type="email" formControlName="email" />
 
-      <label>Password</label>
-      <input type="password" formControlName="password" />
+        <label>Password</label>
+        <input type="password" formControlName="password" />
 
-      <button [disabled]="form.invalid || loading">Create account</button>
-      <div class="error" *ngIf="error">{{error}}</div>
-      <div class="ok" *ngIf="ok">Account created. You can login now.</div>
-    </form>
+        <button [disabled]="form.invalid || loading">Create account</button>
+        <div class="error" *ngIf="error">{{error}}</div>
+        <div class="ok" *ngIf="ok">Account created. You can login now.</div>
+      </form>
 
-    <p>Masz konto? <a routerLink="/login">Zaloguj się</a></p>
+      <p class="muted">Masz konto? <a routerLink="/login">Zaloguj sie</a></p>
+    </div>
   </div>
   `,
   styles: [`
-    .auth { max-width: 380px; margin: 60px auto; }
-    input { width: 100%; padding: 10px; margin: 6px 0 12px; }
-    button { width: 100%; padding: 10px; }
-    .error { color: #b00; margin-top: 10px; }
-    .ok { color: #070; margin-top: 10px; }
+    .auth {
+      min-height: calc(100vh - 48px);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: min(420px, 100%);
+      padding: 28px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background:
+        radial-gradient(240px 160px at 10% 0%, rgba(106, 167, 255, 0.18), transparent 60%),
+        radial-gradient(220px 140px at 90% 0%, rgba(248, 107, 210, 0.2), transparent 60%),
+        var(--grad-soft);
+      box-shadow: var(--shadow);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
+      margin-bottom: 12px;
+    }
+
+    .lead {
+      margin-bottom: 18px;
+      color: var(--muted);
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 14px;
+    }
+
+    .error { color: var(--danger); margin-top: 10px; }
+    .ok { color: var(--primary); margin-top: 10px; }
+    .muted { margin-top: 16px; color: var(--muted); }
+    a { color: var(--text); }
   `]
 })
 export class RegisterComponent {
@@ -54,7 +108,7 @@ export class RegisterComponent {
     const { email, password } = this.form.value;
     this.auth.register(email!, password!).subscribe({
       next: () => { this.ok = true; },
-      error: (e) => { this.error = e?.error?.message || 'Register failed'; },
+      error: (e: HttpErrorResponse) => { this.error = e?.error?.message || 'Register failed'; },
       complete: () => { this.loading = false; }
     });
   }
