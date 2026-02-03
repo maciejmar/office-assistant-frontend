@@ -6,9 +6,9 @@ services:
     container_name: oa_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: oa_user
-      POSTGRES_PASSWORD: oa_pass
-      POSTGRES_DB: oa_db
+      POSTGRES_USER: ${POSTGRES_USER:-oa_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-oa_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-oa_db}
     ports:
       - "5432:5432"
     volumes:
@@ -19,10 +19,10 @@ services:
     container_name: oa_pgadmin
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@local.test
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@local.test}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin123}
     ports:
-      - "5050:80"
+      - "127.0.0.1:5050:80"
     volumes:
       - oa_pgadmin_data:/var/lib/pgadmin
     depends_on:
@@ -42,10 +42,76 @@ services:
     container_name: oa_mailpit
     restart: unless-stopped
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+
+  backend:
+    image: ghcr.io/maciejmar/office-assistant-backend:latest
+    container_name: oa_backend
+    restart: unless-stopped
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-oa_user}:${POSTGRES_PASSWORD:-oa_pass}@postgres:5432/${POSTGRES_DB:-oa_db}
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://office-assistant.webaby.io}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/office-assistant/newsletter/generate}
+    volumes:
+      - oa_storage:/app/storage
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres
+
+  frontend:
+    image: ghcr.io/maciejmar/office-assistant-frontend:latest
+    container_name: oa_frontend
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    depends_on:
+      - backend
+
+  n8n:
+    image: n8nio/n8n:1.36.4
+    container_name: oa_n8n
+    restart: unless-stopped
+    environment:
+      N8N_HOST: ${N8N_HOST:-office-assistant.webaby.io}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL_PUBLIC:-https://office-assistant.webaby.io}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+    ports:
+      - "127.0.0.1:5678:5678"
+    volumes:
+      - oa_n8n_data:/home/node/.n8n
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  caddy:
+    image: caddy:2
+    container_name: oa_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
 
 volumes:
   oa_pg_data:
   oa_pgadmin_data:
   oa_qdrant_data:
+  oa_n8n_data:
+  oa_storage:
+  caddy_data:
+  caddy_config:

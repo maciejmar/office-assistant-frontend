@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://api.twojadomena.pl', // <-- zmieĹ„
+  apiBaseUrl: 'https://office-assistant.webaby.io/api',
   mockAuth: false
 };
