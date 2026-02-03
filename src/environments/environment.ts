@@ -1,5 +1,6 @@
 export const environment = {
   production: false,
-  apiBaseUrl: 'https://api.twojadomena.pl', // <-- zmieĹ„
+  apiBaseUrl: 'http://localhost:8000/api',
   mockAuth: true
+  
 };

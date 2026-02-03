@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     jwt_secret: str = "change-me"
     jwt_alg: str = "HS256"
-    access_token_minutes: int = 30
+    access_token_minutes: int = 720
     refresh_token_days: int = 30
 
     cors_origins: str = "http://localhost:4200"
@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     storage_dir: str = "./storage"
     n8n_webhook_url: str = "http://localhost:5678/webhook/office-assistant/newsletter/generate"
-    external_extract_url: str = "http://localhost:8000/api/extract-text"
+    external_extract_url: str = "http://localhost:8001/api/extract-text"
 
     class Config:
         env_file = ".env"
