@@ -66,7 +66,7 @@ services:
     volumes:
       - oa_storage:/app/storage
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -78,6 +78,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+    ports:
+      - "127.0.0.1:8080:80"
     depends_on:
       - backend
 
@@ -99,26 +101,9 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  caddy:
-    image: caddy:2
-    container_name: oa_caddy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - frontend
-      - backend
-
 volumes:
   oa_pg_data:
   oa_pgadmin_data:
   oa_qdrant_data:
   oa_n8n_data:
   oa_storage:
-  caddy_data:
-  caddy_config:
