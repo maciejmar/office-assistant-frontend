@@ -5,16 +5,12 @@ services:
     restart: unless-stopped
     env_file:
       - /opt/office-assistant.env
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-oa_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-oa_pass}
-      POSTGRES_DB: ${POSTGRES_DB:-oa_db}
     ports:
       - "5432:5432"
     volumes:
       - oa_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-oa_user} -d ${POSTGRES_DB:-oa_db}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -25,9 +21,6 @@ services:
     restart: unless-stopped
     env_file:
       - /opt/office-assistant.env
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@local.test}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin123}
     ports:
       - "127.0.0.1:5050:80"
     volumes:
@@ -62,11 +55,6 @@ services:
       dockerfile: Dockerfile
     env_file:
       - /opt/office-assistant.env
-    environment:
-      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-oa_user}:${POSTGRES_PASSWORD:-oa_pass}@postgres:5432/${POSTGRES_DB:-oa_db}
-      JWT_SECRET: ${JWT_SECRET:-change-me}
-      CORS_ORIGINS: ${CORS_ORIGINS:-https://office-assistant.webaby.io}
-      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/office-assistant/newsletter/generate}
     volumes:
       - oa_storage:/app/storage
     ports:
@@ -93,13 +81,6 @@ services:
     restart: unless-stopped
     env_file:
       - /opt/office-assistant.env
-    environment:
-      N8N_HOST: ${N8N_HOST:-office-assistant.webaby.io}
-      N8N_PORT: 5678
-      N8N_PROTOCOL: http
-      WEBHOOK_URL: ${N8N_WEBHOOK_URL_PUBLIC:-https://office-assistant.webaby.io}
-      N8N_DIAGNOSTICS_ENABLED: "false"
-      N8N_PERSONALIZATION_ENABLED: "false"
     ports:
       - "127.0.0.1:5678:5678"
     volumes:
