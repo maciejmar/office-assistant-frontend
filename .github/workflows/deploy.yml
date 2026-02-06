@@ -22,8 +22,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.GHCR_USER }}
+          password: ${{ secrets.GHCR_PAT }}
 
       - name: Build and push backend
         uses: docker/build-push-action@v6
@@ -49,7 +49,8 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           key: ${{ secrets.SSH_KEY }}
           source: "docker-compose.yml,Caddyfile"
-          target: "/opt/office-assistant"
+          target: "/home/${{ secrets.SSH_USER }}/office-assistant"
+          overwrite: true
 
       - name: Deploy on server
         uses: appleboy/ssh-action@v1.0.3
@@ -59,9 +60,10 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            mkdir -p /opt/office-assistant
+            sudo mkdir -p /opt/office-assistant
+            sudo rsync -a --delete /home/${{ secrets.SSH_USER }}/office-assistant/ /opt/office-assistant/
             cd /opt/office-assistant
-            docker login ghcr.io -u "${{ secrets.GHCR_USER }}" -p "${{ secrets.GHCR_PAT }}"
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER }}" --password-stdin
             docker compose pull
             docker compose up -d
             docker image prune -f
