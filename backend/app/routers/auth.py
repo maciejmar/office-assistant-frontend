@@ -29,7 +29,14 @@ def login(payload: AuthLogin, response: Response, db: Session = Depends(get_db))
     user.refresh_token_hash = hash_password(refresh)
     db.add(user)
     db.commit()
-    response.set_cookie("oa_refresh", refresh, httponly=True, samesite="lax")
+    response.set_cookie(
+        "oa_refresh",
+        refresh,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+    )
     return {"accessToken": access}
 
 
@@ -69,5 +76,5 @@ def logout(response: Response, db: Session = Depends(get_db), oa_refresh: str | 
                     db.commit()
         except Exception:
             pass
-    response.delete_cookie("oa_refresh")
+    response.delete_cookie("oa_refresh", path="/")
     return {"ok": True}
