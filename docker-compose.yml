@@ -13,6 +13,11 @@ services:
       - "5432:5432"
     volumes:
       - oa_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-oa_user} -d ${POSTGRES_DB:-oa_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   pgadmin:
     image: dpage/pgadmin4:8
@@ -26,7 +31,8 @@ services:
     volumes:
       - oa_pgadmin_data:/var/lib/pgadmin
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   qdrant:
     image: qdrant/qdrant:v1.11.5
@@ -62,7 +68,8 @@ services:
     ports:
       - "8001:8001"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   frontend:
     image: ghcr.io/maciejmar/office-assistant-frontend:latest
