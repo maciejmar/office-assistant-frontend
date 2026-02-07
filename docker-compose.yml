@@ -38,6 +38,15 @@ services:
     volumes:
       - oa_qdrant_data:/qdrant/storage
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: oa_ollama
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - oa_ollama_data:/root/.ollama
+
   mailpit:
     image: axllent/mailpit:v1.20.3
     container_name: oa_mailpit
@@ -92,5 +101,6 @@ volumes:
   oa_pg_data:
   oa_pgadmin_data:
   oa_qdrant_data:
+  oa_ollama_data:
   oa_n8n_data:
   oa_storage:
