@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     cors_allow_credentials: bool = True
 
     storage_dir: str = "./storage"
-    n8n_webhook_url: str = "http://localhost:5678/webhook/office-assistant/newsletter/generate"
+    n8n_webhook_url: str = "http://localhost:5678/webhook/office-assistant/newsletter/generate-v3"
     external_extract_url: str = "http://localhost:8001/api/extract-text"
 
     class Config:
