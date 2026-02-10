@@ -85,7 +85,7 @@ services:
       - backend
 
   n8n:
-    image: n8nio/n8n:1.36.4
+    image: n8nio/n8n:2.6.4
     container_name: oa_n8n
     restart: unless-stopped
     env_file:
