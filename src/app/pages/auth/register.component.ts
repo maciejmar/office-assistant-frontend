@@ -21,8 +21,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 
         <label>Password</label>
         <input type="password" formControlName="password" />
+        <div class="error" *ngIf="form.controls.password.touched && form.controls.password.invalid">
+          Haslo musi miec min. 8 znakow.
+        </div>
 
-        <button [disabled]="form.invalid || loading">Create account</button>
+        <button type="submit" [disabled]="loading">Create account</button>
         <div class="error" *ngIf="error">{{error}}</div>
         <div class="ok" *ngIf="ok">Account created. You can login now.</div>
       </form>
@@ -101,6 +104,11 @@ export class RegisterComponent {
   constructor(private auth: AuthService, private router: Router) {}
 
   submit() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
     this.error = '';
     this.ok = false;
     this.loading = true;
@@ -108,7 +116,10 @@ export class RegisterComponent {
     const { email, password } = this.form.value;
     this.auth.register(email!, password!).subscribe({
       next: () => { this.ok = true; },
-      error: (e: HttpErrorResponse) => { this.error = e?.error?.message || 'Register failed'; },
+      error: (e: HttpErrorResponse) => {
+        this.error = e?.error?.message || 'Register failed';
+        this.loading = false;
+      },
       complete: () => { this.loading = false; }
     });
   }
