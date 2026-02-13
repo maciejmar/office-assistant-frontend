@@ -13,10 +13,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
     : req;
 
+  const isAuthEndpoint =
+    req.url.includes('/api/auth/login') ||
+    req.url.includes('/api/auth/register') ||
+    req.url.includes('/api/auth/refresh');
+
   return next(authReq).pipe(
     catchError((err) => {
-      // Jeśli access token wygasł → spróbuj refresh i powtórz request
-      if (err?.status === 401) {
+      // Avoid refresh loops on auth endpoints when login/register/refresh returns 401.
+      if (err?.status === 401 && !isAuthEndpoint) {
         return auth.refreshAccessToken().pipe(
           switchMap((ok) => {
             if (!ok) return throwError(() => err);
