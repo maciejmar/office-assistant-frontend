@@ -40,7 +40,15 @@ def create_job(
 
     try:
         with httpx.Client(timeout=20) as client:
-            client.post(settings.n8n_webhook_url, json=webhook_payload)
+            resp = client.post(settings.n8n_webhook_url, json=webhook_payload)
+            if resp.status_code >= 400:
+                job.status = "failed"
+                job.error = f"Workflow trigger failed: {resp.status_code} {resp.text[:300]}"
+                db.add(job)
+                db.commit()
+                raise HTTPException(status_code=502, detail="Workflow trigger returned error")
+    except HTTPException:
+        raise
     except Exception as exc:
         job.status = "failed"
         job.error = str(exc)
