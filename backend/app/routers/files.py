@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 from ..deps import get_db, get_current_user
@@ -85,4 +86,15 @@ def download(file_id: int, user: User = Depends(get_current_user), db: Session =
     if not file_rec:
         raise HTTPException(status_code=404, detail="File not found")
     data = load_file(file_rec)
-    return Response(content=data, media_type=file_rec.mime, headers={"Content-Disposition": f"attachment; filename={file_rec.filename}"})
+    # HTTP headers are latin-1; use RFC 5987 for non-ASCII filenames.
+    safe_ascii_name = file_rec.filename.encode("ascii", "ignore").decode("ascii") or "file"
+    encoded_name = quote(file_rec.filename, safe="")
+    content_disposition = (
+        f'attachment; filename="{safe_ascii_name}"; '
+        f"filename*=UTF-8''{encoded_name}"
+    )
+    return Response(
+        content=data,
+        media_type=file_rec.mime,
+        headers={"Content-Disposition": content_disposition},
+    )
