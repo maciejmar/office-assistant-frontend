@@ -15,8 +15,16 @@ import { ApiService, JobStatusDto } from '../../core/api.service';
       <div *ngIf="status?.progress != null"><b>Progress:</b> {{status?.progress}}%</div>
       <div class="error" *ngIf="status?.error">{{status?.error}}</div>
 
+      <div class="ok" *ngIf="status?.status === 'done'">
+        The job is done.
+      </div>
+
       <div class="row" *ngIf="status?.status === 'done' && status?.newsletterId">
         <a [routerLink]="['/app/newsletters', status?.newsletterId]">Open newsletter</a>
+        <a routerLink="/app/newsletters">Go to history</a>
+      </div>
+
+      <div class="row" *ngIf="status?.status === 'done' && !status?.newsletterId">
         <a routerLink="/app/newsletters">Go to history</a>
       </div>
 
@@ -28,6 +36,7 @@ import { ApiService, JobStatusDto } from '../../core/api.service';
   styles: [`
     .card { border:1px solid #ddd; border-radius: 10px; padding: 14px; max-width: 720px; }
     .row { display:flex; gap: 12px; margin-top: 12px; }
+    .ok { color:#0a7a2f; margin-top: 10px; font-weight: 600; }
     .error { color:#b00; margin-top: 10px; }
   `]
 })

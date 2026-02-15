@@ -25,8 +25,33 @@ import { ApiService, NewsletterDetailDto } from '../../core/api.service';
   styles: [`
     .muted { color:#666; margin-bottom: 10px; }
     .row { margin: 10px 0; }
-    .preview { border:1px solid #ddd; border-radius:10px; padding: 14px; max-width: 980px; }
-    .text { border:1px solid #ddd; border-radius:10px; padding: 14px; max-width: 980px; white-space: pre-wrap; }
+    .preview {
+      border:1px solid #ddd;
+      border-radius:10px;
+      padding: 14px;
+      max-width: 980px;
+      overflow-x: auto;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .preview :where(pre, code) {
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .preview :where(img, table, iframe) {
+      max-width: 100%;
+      height: auto;
+    }
+    .text {
+      border:1px solid #ddd;
+      border-radius:10px;
+      padding: 14px;
+      max-width: 980px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
   `]
 })
 export class NewsletterPreviewComponent {
