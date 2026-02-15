@@ -3,7 +3,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from ..deps import get_db, get_current_user
-from ..models import NewsletterJob, Newsletter, User
+from ..models import NewsletterJob, Newsletter, User, File
 from ..schemas import JobCreate, JobCreateOut, JobStatusOut
 from ..config import settings
 
@@ -17,6 +17,25 @@ def create_job(
     db: Session = Depends(get_db),
     authorization: str | None = Header(default=None),
 ):
+    selected_files = (
+        db.query(File)
+        .filter(File.user_id == user.id, File.id.in_(payload.fileIds), File.status.in_(["uploaded", "ready"]))
+        .all()
+    )
+    if len(selected_files) != len(payload.fileIds):
+        raise HTTPException(status_code=400, detail="Some selected files are missing or not ready.")
+
+    total_bytes = sum((f.size or 0) for f in selected_files)
+    max_bytes = settings.max_job_total_input_mb * 1024 * 1024
+    if total_bytes > max_bytes:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Selected files are too large for generation ({round(total_bytes / (1024 * 1024), 1)} MB). "
+                f"Limit is {settings.max_job_total_input_mb} MB. Remove some old/large PDFs."
+            ),
+        )
+
     job = NewsletterJob(user_id=user.id, status="queued", created_at=datetime.utcnow())
     db.add(job)
     db.commit()

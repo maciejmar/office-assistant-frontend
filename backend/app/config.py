@@ -17,9 +17,12 @@ class Settings(BaseSettings):
     storage_dir: str = "./storage"
     n8n_webhook_url: str = "http://localhost:5678/webhook/office-assistant/newsletter/generate-v3"
     external_extract_url: str = "http://localhost:8001/api/extract-text"
+    qdrant_url: str = "http://qdrant:6333"
+    qdrant_collection: str = "documents"
     max_uploaded_files_per_user: int = 20
     max_pdf_size_mb: int = 15
     max_pdf_pages: int = 40
+    max_job_total_input_mb: int = 20
 
     class Config:
         env_file = ".env"

@@ -119,8 +119,14 @@ type UploadItem = {
     </div>
 
     <div class="error" *ngIf="error">{{error}}</div>
+    <div class="muted">
+      Selected input size: {{selectedUploadMb}} MB / {{maxJobInputMb}} MB
+    </div>
+    <div class="warn" *ngIf="selectedUploadBytes > maxJobInputBytes">
+      Selected files exceed generation limit. Remove large files or upload fewer PDFs.
+    </div>
 
-    <button (click)="generate()" [disabled]="generating">
+    <button (click)="generate()" [disabled]="generating || selectedUploadBytes > maxJobInputBytes">
       Generate & Send
     </button>
 
@@ -171,6 +177,7 @@ export class CreateNewsletterComponent {
   readonly maxRecommendedUploadedFiles = 12;
   readonly maxUploadedFiles = 20;
   readonly maxTotalStoredBytes = 120 * 1024 * 1024;
+  readonly maxJobInputBytes = 20 * 1024 * 1024;
 
   uploads: UploadItem[] = [];
   uploading = false;
@@ -198,6 +205,20 @@ export class CreateNewsletterComponent {
 
   get uploadBlockedByLimit() {
     return this.uploadedFilesCount + this.uploads.length > this.maxUploadedFiles;
+  }
+
+  get selectedUploadBytes() {
+    return this.uploads
+      .filter((u) => u.status === 'done')
+      .reduce((sum, u) => sum + u.file.size, 0);
+  }
+
+  get selectedUploadMb() {
+    return (this.selectedUploadBytes / (1024 * 1024)).toFixed(1);
+  }
+
+  get maxJobInputMb() {
+    return (this.maxJobInputBytes / (1024 * 1024)).toFixed(0);
   }
 
   get uploadedFilesProgressPct() {
@@ -343,6 +364,12 @@ export class CreateNewsletterComponent {
         throw new Error('Upload at least one PDF first (Upload selected).');
       }
 
+      if (this.selectedUploadBytes > this.maxJobInputBytes) {
+        throw new Error(
+          `Selected files are too large for generation (${this.selectedUploadMb} MB). Limit is ${this.maxJobInputMb} MB.`,
+        );
+      }
+
       const subscriberEmails = this.selectedEmails();
       if (!subscriberEmails.length) {
         throw new Error('Select at least one subscriber.');
@@ -360,7 +387,7 @@ export class CreateNewsletterComponent {
 
       this.router.navigateByUrl(`/app/jobs/${jobId}`);
     } catch (e: any) {
-      this.error = e?.message || 'Generate failed';
+      this.error = e?.error?.detail || e?.message || 'Generate failed';
       this.generating = false;
     }
   }

@@ -8,6 +8,7 @@ from ..models import File, User
 from ..config import settings
 from ..schemas import FileOut, FilePresignIn, FilePresignOut
 from ..storage import save_file, load_file
+from ..services.qdrant import delete_points_for_file
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -133,7 +134,11 @@ def complete(payload: dict, user: User = Depends(get_current_user), db: Session 
 
 @router.delete("/{file_id}")
 def delete_file(file_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    db.query(File).filter(File.id == file_id, File.user_id == user.id).delete()
+    file_rec = db.query(File).filter(File.id == file_id, File.user_id == user.id).first()
+    if not file_rec:
+        raise HTTPException(status_code=404, detail="File not found")
+    delete_points_for_file(user.id, file_rec.id)
+    db.delete(file_rec)
     db.commit()
     return {"ok": True}
 
