@@ -3,7 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 
 export interface SubscriberDto { id: string; email: string; status?: string; created_at?: string; }
-export interface FileDto { id: string; filename: string; status: string; uploaded_at?: string; }
+export interface FileDto {
+  id: string;
+  filename: string;
+  status: string;
+  uploaded_at?: string;
+  mime?: string;
+  size?: number;
+}
 export interface NewsletterDto { id: string; subject: string; created_at: string; }
 export interface NewsletterDetailDto { id: string; subject: string; html_body: string; text_body: string; created_at: string; }
 export interface JobStatusDto { status: 'queued'|'running'|'done'|'failed'; newsletterId?: string; progress?: number; error?: string; }

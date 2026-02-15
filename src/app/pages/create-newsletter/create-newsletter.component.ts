@@ -21,6 +21,7 @@ type UploadItem = {
   <section class="panel">
     <h2>1) Upload PDF documents</h2>
     <input type="file" accept="application/pdf" multiple (change)="onFiles($event)" />
+    <div class="error" *ngIf="uploadValidationError">{{uploadValidationError}}</div>
     <div class="list" *ngIf="uploads.length">
       <div class="item" *ngFor="let u of uploads">
         <div>
@@ -29,12 +30,33 @@ type UploadItem = {
         </div>
       </div>
     </div>
-    <button (click)="uploadAll()" [disabled]="uploading || !uploads.length">Upload selected</button>
+    <button (click)="uploadAll()" [disabled]="uploading || !uploads.length || uploadBlockedByLimit">Upload selected</button>
+    <div class="error" *ngIf="uploadBlockedByLimit">
+      Upload blocked: file limit is {{maxUploadedFiles}}. Delete old PDFs first.
+    </div>
     <div class="muted">Only PDFs uploaded in this step are used for this job.</div>
   </section>
 
   <section class="panel">
     <h2>Uploaded PDF library</h2>
+    <div class="meter-wrap">
+      <div class="meter-title">
+        <span>File slots</span>
+        <b>{{uploadedFilesCount}} / {{maxUploadedFiles}}</b>
+      </div>
+      <div class="meter">
+        <div class="bar" [ngClass]="uploadedFilesProgressClass" [style.width.%]="uploadedFilesProgressPct"></div>
+      </div>
+    </div>
+    <div class="meter-wrap">
+      <div class="meter-title">
+        <span>Stored size</span>
+        <b>{{totalStoredMb}} MB / {{maxStoredMb}} MB</b>
+      </div>
+      <div class="meter">
+        <div class="bar" [ngClass]="totalStoredProgressClass" [style.width.%]="totalStoredProgressPct"></div>
+      </div>
+    </div>
     <div class="warn" *ngIf="uploadedFilesCount > maxRecommendedUploadedFiles">
       You have {{uploadedFilesCount}} uploaded files.
       Large history may produce oversized RAG context and slower generation.
@@ -122,6 +144,13 @@ type UploadItem = {
       background: #fff7e6;
       color: #7a5700;
     }
+    .meter-wrap { margin: 8px 0 10px; }
+    .meter-title { display: flex; justify-content: space-between; font-size: 13px; color: #555; margin-bottom: 4px; }
+    .meter { height: 10px; border-radius: 999px; background: #e9edf5; overflow: hidden; }
+    .bar { height: 100%; transition: width 200ms ease; }
+    .bar.ok { background: #1f9d55; }
+    .bar.warn { background: #d97706; }
+    .bar.danger { background: #dc2626; }
     .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
     .subs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
     .sub { display: flex; gap: 8px; align-items: center; border: 1px solid #eee; border-radius: 8px; padding: 8px; }
@@ -140,12 +169,15 @@ type UploadItem = {
 })
 export class CreateNewsletterComponent {
   readonly maxRecommendedUploadedFiles = 12;
+  readonly maxUploadedFiles = 20;
+  readonly maxTotalStoredBytes = 120 * 1024 * 1024;
 
   uploads: UploadItem[] = [];
   uploading = false;
   generating = false;
   error = '';
   filesError = '';
+  uploadValidationError = '';
 
   subs: SubscriberDto[] = [];
   selected = new Set<string>();
@@ -161,7 +193,43 @@ export class CreateNewsletterComponent {
   }
 
   get uploadedFilesCount() {
-    return this.files.filter((f) => f.status === 'uploaded').length;
+    return this.files.filter((f) => f.status === 'uploaded' || f.status === 'ready').length;
+  }
+
+  get uploadBlockedByLimit() {
+    return this.uploadedFilesCount + this.uploads.length > this.maxUploadedFiles;
+  }
+
+  get uploadedFilesProgressPct() {
+    return Math.min(100, Math.round((this.uploadedFilesCount / this.maxUploadedFiles) * 100));
+  }
+
+  get uploadedFilesProgressClass() {
+    if (this.uploadedFilesProgressPct >= 90) return 'danger';
+    if (this.uploadedFilesProgressPct >= 70) return 'warn';
+    return 'ok';
+  }
+
+  get totalStoredBytes() {
+    return this.files.reduce((sum, f) => sum + (f.size || 0), 0);
+  }
+
+  get totalStoredMb() {
+    return (this.totalStoredBytes / (1024 * 1024)).toFixed(1);
+  }
+
+  get maxStoredMb() {
+    return (this.maxTotalStoredBytes / (1024 * 1024)).toFixed(0);
+  }
+
+  get totalStoredProgressPct() {
+    return Math.min(100, Math.round((this.totalStoredBytes / this.maxTotalStoredBytes) * 100));
+  }
+
+  get totalStoredProgressClass() {
+    if (this.totalStoredProgressPct >= 90) return 'danger';
+    if (this.totalStoredProgressPct >= 70) return 'warn';
+    return 'ok';
   }
 
   async loadSubs() {
@@ -181,7 +249,16 @@ export class CreateNewsletterComponent {
 
   onFiles(ev: Event) {
     const input = ev.target as HTMLInputElement;
-    const files = Array.from(input.files || []);
+    const raw = Array.from(input.files || []);
+    const files = raw.filter((f) => {
+      const isPdf = f.type.toLowerCase() === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+      return isPdf;
+    });
+    if (files.length !== raw.length) {
+      this.uploadValidationError = 'Only PDF files are allowed.';
+    } else {
+      this.uploadValidationError = '';
+    }
     this.uploads = files.map((f) => ({ file: f, status: 'pending' }));
   }
 
@@ -205,6 +282,14 @@ export class CreateNewsletterComponent {
 
   async uploadAll() {
     this.error = '';
+    this.uploadValidationError = '';
+
+    const projectedCount = this.uploadedFilesCount + this.uploads.length;
+    if (projectedCount > this.maxUploadedFiles) {
+      this.uploadValidationError = `Upload blocked: file limit is ${this.maxUploadedFiles}. Delete old PDFs first.`;
+      return;
+    }
+
     this.uploading = true;
 
     for (const u of this.uploads) {

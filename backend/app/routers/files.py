@@ -1,13 +1,43 @@
+import io
 from datetime import datetime
 from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 from ..deps import get_db, get_current_user
 from ..models import File, User
+from ..config import settings
 from ..schemas import FileOut, FilePresignIn, FilePresignOut
 from ..storage import save_file, load_file
 
 router = APIRouter(prefix="/files", tags=["files"])
+
+PDF_MIME = "application/pdf"
+
+
+def _is_pdf_name(filename: str) -> bool:
+    return filename.lower().endswith(".pdf")
+
+
+def _validate_pdf_bytes(data: bytes) -> None:
+    if not data.startswith(b"%PDF"):
+        raise HTTPException(status_code=400, detail="Invalid PDF header")
+    try:
+        from pypdf import PdfReader
+    except Exception:
+        raise HTTPException(status_code=500, detail="PDF validation support not available")
+
+    try:
+        reader = PdfReader(io.BytesIO(data))
+        pages = len(reader.pages)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Unreadable or corrupted PDF")
+    if pages < 1:
+        raise HTTPException(status_code=400, detail="PDF has no pages")
+    if pages > settings.max_pdf_pages:
+        raise HTTPException(
+            status_code=400,
+            detail=f"PDF has {pages} pages. Maximum allowed is {settings.max_pdf_pages}.",
+        )
 
 
 @router.get("", response_model=list[FileOut])
@@ -19,6 +49,8 @@ def list_files(user: User = Depends(get_current_user), db: Session = Depends(get
             filename=f.filename,
             status=f.status,
             uploaded_at=f.uploaded_at.isoformat() if f.uploaded_at else None,
+            mime=f.mime,
+            size=f.size,
         )
         for f in items
     ]
@@ -30,6 +62,31 @@ def presign(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if payload.size <= 0:
+        raise HTTPException(status_code=400, detail="Empty file")
+    max_bytes = settings.max_pdf_size_mb * 1024 * 1024
+    if payload.size > max_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File is too large. Max size is {settings.max_pdf_size_mb} MB.",
+        )
+    if payload.mime.lower() != PDF_MIME or not _is_pdf_name(payload.filename):
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+
+    active_files = (
+        db.query(File)
+        .filter(File.user_id == user.id, File.status.in_(["uploaded", "ready"]))
+        .count()
+    )
+    if active_files >= settings.max_uploaded_files_per_user:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"File limit reached ({settings.max_uploaded_files_per_user}). "
+                "Delete old PDFs before uploading new ones."
+            ),
+        )
+
     file_rec = File(
         user_id=user.id,
         filename=payload.filename,
@@ -51,6 +108,7 @@ async def upload(file_id: int, request: Request, db: Session = Depends(get_db)):
     if not file_rec:
         raise HTTPException(status_code=404, detail="File not found")
     data = await request.body()
+    _validate_pdf_bytes(data)
     save_file(file_rec, data)
     file_rec.status = "uploaded"
     file_rec.uploaded_at = datetime.utcnow()

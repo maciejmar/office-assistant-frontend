@@ -36,6 +36,8 @@ class FileOut(BaseModel):
     filename: str
     status: str
     uploaded_at: Optional[str] = None
+    mime: Optional[str] = None
+    size: Optional[int] = None
 
 
 class FilePresignIn(BaseModel):
