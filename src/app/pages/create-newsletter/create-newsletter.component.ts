@@ -7,7 +7,7 @@ import { firstValueFrom } from 'rxjs';
 
 type UploadItem = {
   file: File;
-  status: 'pending'|'uploading'|'done'|'failed';
+  status: 'pending' | 'uploading' | 'done' | 'failed';
   fileId?: string;
   error?: string;
 };
@@ -30,11 +30,34 @@ type UploadItem = {
       </div>
     </div>
     <button (click)="uploadAll()" [disabled]="uploading || !uploads.length">Upload selected</button>
+    <div class="muted">Only PDFs uploaded in this step are used for this job.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Uploaded PDF library</h2>
+    <div class="warn" *ngIf="uploadedFilesCount > maxRecommendedUploadedFiles">
+      You have {{uploadedFilesCount}} uploaded files.
+      Large history may produce oversized RAG context and slower generation.
+      Delete old files you no longer need.
+    </div>
+    <div class="error" *ngIf="filesError">{{filesError}}</div>
+    <div class="list" *ngIf="files.length; else emptyFiles">
+      <div class="item file-item" *ngFor="let f of files">
+        <div>
+          <div><b>{{f.filename}}</b></div>
+          <div class="muted">status: {{f.status}} <span *ngIf="f.uploaded_at">| uploaded: {{f.uploaded_at}}</span></div>
+        </div>
+        <button class="danger" (click)="deleteFile(f.id)">Delete</button>
+      </div>
+    </div>
+    <ng-template #emptyFiles>
+      <div class="muted">No uploaded files yet.</div>
+    </ng-template>
   </section>
 
   <section class="panel">
     <h2>2) Choose subscribers</h2>
-    <div class="muted">Zaznacz odbiorców, albo zostaw wszystkich.</div>
+    <div class="muted">Select recipients, or keep all selected.</div>
 
     <div class="row">
       <button (click)="selectAll()">Select all</button>
@@ -80,32 +103,53 @@ type UploadItem = {
     </button>
 
     <div class="muted">
-      Uwaga: generacja użyje plików, które mają status uploaded (po uploadAll).
+      Generation will use files uploaded in this screen and marked as done.
     </div>
   </section>
   `,
   styles: [`
     .panel { border: 1px solid #ddd; border-radius: 10px; padding: 14px; margin: 14px 0; max-width: 980px; }
-    .list { margin-top: 10px; display:flex; flex-direction:column; gap: 8px; }
+    .list { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
     .item { padding: 10px; border: 1px solid #eee; border-radius: 8px; }
-    .muted { color:#666; font-size: 13px; }
-    .err { color:#b00; }
-    .row { display:flex; gap: 10px; align-items:center; flex-wrap: wrap; margin: 10px 0; }
-    .subs { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
-    .sub { display:flex; gap: 8px; align-items:center; border:1px solid #eee; border-radius: 8px; padding: 8px; }
-    .error { color:#b00; margin: 10px 0; }
+    .file-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .muted { color: #666; font-size: 13px; }
+    .err { color: #b00; }
+    .warn {
+      margin: 8px 0;
+      padding: 10px;
+      border: 1px solid #e0a800;
+      border-radius: 8px;
+      background: #fff7e6;
+      color: #7a5700;
+    }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+    .subs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+    .sub { display: flex; gap: 8px; align-items: center; border: 1px solid #eee; border-radius: 8px; padding: 8px; }
+    .error { color: #b00; margin: 10px 0; }
+    .danger {
+      border: 1px solid #d64545;
+      color: #d64545;
+      background: transparent;
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
     input[type="number"] { width: 120px; }
     select { padding: 6px; }
   `],
 })
 export class CreateNewsletterComponent {
+  readonly maxRecommendedUploadedFiles = 12;
+
   uploads: UploadItem[] = [];
   uploading = false;
   generating = false;
   error = '';
+  filesError = '';
 
   subs: SubscriberDto[] = [];
   selected = new Set<string>();
+  files: FileDto[] = [];
 
   language = 'pl';
   tone = 'professional';
@@ -113,19 +157,32 @@ export class CreateNewsletterComponent {
 
   constructor(private api: ApiService, private router: Router) {
     this.loadSubs();
+    this.loadFiles();
+  }
+
+  get uploadedFilesCount() {
+    return this.files.filter((f) => f.status === 'uploaded').length;
   }
 
   async loadSubs() {
     const subs = await firstValueFrom(this.api.listSubscribers());
     this.subs = subs;
-    // Domyślnie zaznacz wszystkich:
-    subs.forEach(s => this.selected.add(s.email));
+    subs.forEach((s) => this.selected.add(s.email));
+  }
+
+  async loadFiles() {
+    this.filesError = '';
+    try {
+      this.files = await firstValueFrom(this.api.listFiles());
+    } catch (e: any) {
+      this.filesError = e?.error?.detail || 'Failed to load uploaded files.';
+    }
   }
 
   onFiles(ev: Event) {
     const input = ev.target as HTMLInputElement;
     const files = Array.from(input.files || []);
-    this.uploads = files.map(f => ({ file: f, status: 'pending' }));
+    this.uploads = files.map((f) => ({ file: f, status: 'pending' }));
   }
 
   selectedEmails() {
@@ -138,8 +195,13 @@ export class CreateNewsletterComponent {
     else this.selected.delete(email);
   }
 
-  selectAll() { this.subs.forEach(s => this.selected.add(s.email)); }
-  selectNone() { this.selected.clear(); }
+  selectAll() {
+    this.subs.forEach((s) => this.selected.add(s.email));
+  }
+
+  selectNone() {
+    this.selected.clear();
+  }
 
   async uploadAll() {
     this.error = '';
@@ -150,10 +212,9 @@ export class CreateNewsletterComponent {
         u.status = 'uploading';
 
         const presign = await firstValueFrom(
-          this.api.presignUpload(u.file.name, u.file.type || 'application/pdf', u.file.size)
+          this.api.presignUpload(u.file.name, u.file.type || 'application/pdf', u.file.size),
         );
 
-        // upload do MinIO (presigned URL)
         await fetch(presign.uploadUrl, {
           method: 'PUT',
           headers: { 'Content-Type': u.file.type || 'application/pdf' },
@@ -170,6 +231,18 @@ export class CreateNewsletterComponent {
     }
 
     this.uploading = false;
+    await this.loadFiles();
+  }
+
+  async deleteFile(fileId: string) {
+    if (!confirm('Delete this uploaded PDF?')) return;
+    this.filesError = '';
+    try {
+      await firstValueFrom(this.api.deleteFile(fileId));
+      this.files = this.files.filter((f) => f.id !== fileId);
+    } catch (e: any) {
+      this.filesError = e?.error?.detail || 'Delete failed.';
+    }
   }
 
   async generate() {
@@ -177,16 +250,17 @@ export class CreateNewsletterComponent {
     this.generating = true;
 
     try {
-      // bierzemy fileIds z uploadów które są done
-      const fileIds = this.uploads.filter(u => u.status === 'done' && u.fileId).map(u => u.fileId!) ;
+      const fileIds = this.uploads
+        .filter((u) => u.status === 'done' && u.fileId)
+        .map((u) => u.fileId as string);
 
       if (!fileIds.length) {
-        throw new Error('Najpierw wgraj przynajmniej jeden PDF (Upload selected).');
+        throw new Error('Upload at least one PDF first (Upload selected).');
       }
 
       const subscriberEmails = this.selectedEmails();
       if (!subscriberEmails.length) {
-        throw new Error('Wybierz przynajmniej jednego subskrybenta.');
+        throw new Error('Select at least one subscriber.');
       }
 
       const { jobId } = await firstValueFrom(
@@ -196,7 +270,7 @@ export class CreateNewsletterComponent {
           language: this.language,
           tone: this.tone,
           maxLength: this.maxLength,
-        })
+        }),
       );
 
       this.router.navigateByUrl(`/app/jobs/${jobId}`);
