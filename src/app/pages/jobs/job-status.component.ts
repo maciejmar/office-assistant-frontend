@@ -1,6 +1,6 @@
 import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService, JobStatusDto } from '../../core/api.service';
 
 @Component({
@@ -45,7 +45,7 @@ export class JobStatusComponent implements OnDestroy {
   status: JobStatusDto | null = null;
   t?: any;
 
-  constructor(private route: ActivatedRoute, private api: ApiService) {
+  constructor(private route: ActivatedRoute, private api: ApiService, private router: Router) {
     this.jobId = this.route.snapshot.paramMap.get('jobId')!;
     this.poll();
     this.t = setInterval(() => this.poll(), 2500);
@@ -57,6 +57,9 @@ export class JobStatusComponent implements OnDestroy {
         this.status = s;
         if (s.status === 'done' || s.status === 'failed') {
           clearInterval(this.t);
+        }
+        if (s.status === 'done' && s.newsletterId) {
+          this.router.navigateByUrl(`/app/newsletters/${s.newsletterId}`);
         }
       }
     });

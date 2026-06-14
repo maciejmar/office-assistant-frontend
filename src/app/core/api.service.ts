@@ -12,7 +12,8 @@ export interface FileDto {
   size?: number;
 }
 export interface NewsletterDto { id: string; subject: string; created_at: string; }
-export interface NewsletterDetailDto { id: string; subject: string; html_body: string; text_body: string; created_at: string; }
+export interface NewsletterDetailDto { id: string; subject: string; html_body: string; text_body: string; created_at: string; pending_subscriber_count?: number; }
+export interface NewsletterSendResult { sent_count: number; }
 export interface JobStatusDto { status: 'queued'|'running'|'done'|'failed'; newsletterId?: string; progress?: number; error?: string; }
 
 @Injectable({ providedIn: 'root' })
@@ -73,6 +74,9 @@ export class ApiService {
   }
   getNewsletter(id: string) {
     return this.http.get<NewsletterDetailDto>(`${this.base}/newsletters/${id}`, { withCredentials: true });
+  }
+  sendNewsletter(id: string) {
+    return this.http.post<NewsletterSendResult>(`${this.base}/newsletters/${id}/send`, {}, { withCredentials: true });
   }
 
   // Jobs

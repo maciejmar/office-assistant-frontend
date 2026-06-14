@@ -43,6 +43,7 @@ class NewsletterJob(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    subscriber_emails: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list
 
 
 class Newsletter(Base):

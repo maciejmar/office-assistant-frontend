@@ -13,6 +13,15 @@ import { ApiService, NewsletterDetailDto } from '../../core/api.service';
 
       <div class="row">
         <a routerLink="/app/newsletters">Back</a>
+        <button
+          *ngIf="!sentCount"
+          [disabled]="sending"
+          (click)="send()"
+        >
+          {{ sending ? 'Sending…' : 'Send to ' + (item.pending_subscriber_count ?? 0) + ' subscribers' }}
+        </button>
+        <span class="ok" *ngIf="sentCount">Sent to {{sentCount}} subscribers.</span>
+        <span class="err" *ngIf="sendError">{{sendError}}</span>
       </div>
 
       <h2>HTML preview</h2>
@@ -24,7 +33,9 @@ import { ApiService, NewsletterDetailDto } from '../../core/api.service';
   `,
   styles: [`
     .muted { color:#666; margin-bottom: 10px; }
-    .row { margin: 10px 0; }
+    .row { margin: 10px 0; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .ok { color: #0a7a2f; font-weight: 600; }
+    .err { color: #b00; }
     .preview {
       border:1px solid #ddd;
       border-radius:10px;
@@ -56,9 +67,28 @@ import { ApiService, NewsletterDetailDto } from '../../core/api.service';
 })
 export class NewsletterPreviewComponent {
   item: NewsletterDetailDto | null = null;
+  sending = false;
+  sentCount: number | null = null;
+  sendError = '';
+  private newsletterId = '';
 
   constructor(private route: ActivatedRoute, private api: ApiService) {
-    const id = this.route.snapshot.paramMap.get('id')!;
-    this.api.getNewsletter(id).subscribe(n => this.item = n);
+    this.newsletterId = this.route.snapshot.paramMap.get('id')!;
+    this.api.getNewsletter(this.newsletterId).subscribe(n => this.item = n);
+  }
+
+  send() {
+    this.sendError = '';
+    this.sending = true;
+    this.api.sendNewsletter(this.newsletterId).subscribe({
+      next: (r) => {
+        this.sentCount = r.sent_count;
+        this.sending = false;
+      },
+      error: (e) => {
+        this.sendError = e?.error?.detail || 'Send failed';
+        this.sending = false;
+      },
+    });
   }
 }

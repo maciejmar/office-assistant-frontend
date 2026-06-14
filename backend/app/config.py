@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     storage_dir: str = "./storage"
     n8n_webhook_url: str = "http://localhost:5678/webhook/office-assistant/newsletter/generate-v3"
+    n8n_send_webhook_url: str = ""
     external_extract_url: str = "http://localhost:8001/api/extract-text"
     qdrant_url: str = "http://qdrant:6333"
     qdrant_collection: str = "documents"

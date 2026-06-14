@@ -127,7 +127,7 @@ type UploadItem = {
     </div>
 
     <button (click)="generate()" [disabled]="generating || selectedUploadBytes > maxJobInputBytes">
-      Generate & Send
+      Generate
     </button>
 
     <div class="muted">

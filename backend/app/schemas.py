@@ -63,6 +63,11 @@ class NewsletterDetailOut(BaseModel):
     html_body: str
     text_body: str
     created_at: str
+    pending_subscriber_count: int = 0
+
+
+class NewsletterSendOut(BaseModel):
+    sent_count: int
 
 
 class JobCreate(BaseModel):

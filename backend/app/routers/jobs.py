@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
@@ -36,7 +37,12 @@ def create_job(
             ),
         )
 
-    job = NewsletterJob(user_id=user.id, status="queued", created_at=datetime.utcnow())
+    job = NewsletterJob(
+        user_id=user.id,
+        status="queued",
+        created_at=datetime.utcnow(),
+        subscriber_emails=json.dumps([str(e) for e in payload.subscriberEmails]),
+    )
     db.add(job)
     db.commit()
     db.refresh(job)
@@ -49,7 +55,7 @@ def create_job(
         "job_id": job.id,
         "user_id": user.id,
         "file_ids": payload.fileIds,
-        "subscriber_emails": payload.subscriberEmails,
+        "subscriber_emails": [],
         "language": payload.language,
         "tone": payload.tone,
         "max_length": payload.maxLength,
