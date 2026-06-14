@@ -1,9 +1,14 @@
 import json
-import httpx
+import smtplib
+from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from ..deps import get_db, get_current_user
-from ..models import Newsletter, NewsletterJob, User
+from ..models import Newsletter, NewsletterJob, SendLog, User
 from ..schemas import NewsletterOut, NewsletterDetailOut, NewsletterSendOut
 from ..config import settings
 
@@ -76,26 +81,34 @@ def send_newsletter(newsletter_id: int, user: User = Depends(get_current_user), 
             pass
 
     if not subscriber_emails:
-        raise HTTPException(status_code=400, detail="No subscribers assigned to this newsletter.")
+        raise HTTPException(status_code=400, detail="Brak subskrybentów przypisanych do tego newslettera.")
 
-    if not settings.n8n_send_webhook_url:
-        raise HTTPException(status_code=501, detail="Send webhook not configured (n8n_send_webhook_url).")
+    failed: list[str] = []
+    for addr in subscriber_emails:
+        try:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = row.subject
+            msg["From"] = settings.smtp_from
+            msg["To"] = addr
+            msg.attach(MIMEText(row.text_body, "plain", "utf-8"))
+            msg.attach(MIMEText(row.html_body, "html", "utf-8"))
+            with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as s:
+                s.sendmail(settings.smtp_from, addr, msg.as_string())
+            status = "sent"
+        except Exception:
+            status = "failed"
+            failed.append(addr)
 
-    payload = {
-        "newsletter_id": row.id,
-        "subject": row.subject,
-        "html_body": row.html_body,
-        "text_body": row.text_body,
-        "subscriber_emails": subscriber_emails,
-    }
-    try:
-        with httpx.Client(timeout=20) as client:
-            resp = client.post(settings.n8n_send_webhook_url, json=payload)
-            if resp.status_code >= 400:
-                raise HTTPException(status_code=502, detail=f"Send workflow failed: {resp.status_code}")
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to trigger send workflow: {exc}")
+        db.add(SendLog(
+            newsletter_id=row.id,
+            subscriber_email=addr,
+            status=status,
+            sent_at=datetime.utcnow(),
+        ))
 
-    return NewsletterSendOut(sent_count=len(subscriber_emails))
+    db.commit()
+
+    if failed and len(failed) == len(subscriber_emails):
+        raise HTTPException(status_code=500, detail=f"Wysyłka nie powiodła się dla żadnego adresu.")
+
+    return NewsletterSendOut(sent_count=len(subscriber_emails) - len(failed))

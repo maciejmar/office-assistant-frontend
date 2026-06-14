@@ -44,13 +44,19 @@ def _extract_text(data: bytes, filename: str, mime: str) -> str:
     return ""
 
 
+def _strip_code_fence(text: str) -> str:
+    text = re.sub(r"^```[a-zA-Z]*\n?", "", text.strip())
+    text = re.sub(r"\n?```$", "", text.strip())
+    return text.strip()
+
+
 def _parse_llm_output(raw: str) -> tuple[str, str, str]:
     s = re.search(r"===SUBJECT===\s*(.*?)\s*===HTML===", raw, re.DOTALL)
     h = re.search(r"===HTML===\s*(.*?)\s*===TEXT===", raw, re.DOTALL)
     t = re.search(r"===TEXT===\s*(.*?)(?:===|$)", raw, re.DOTALL)
-    subject   = s.group(1).strip() if s else "Newsletter"
-    html_body = h.group(1).strip() if h else f"<p>{raw}</p>"
-    text_body = t.group(1).strip() if t else raw
+    subject   = _strip_code_fence(s.group(1)) if s else "Newsletter"
+    html_body = _strip_code_fence(h.group(1)) if h else f"<p>{raw}</p>"
+    text_body = _strip_code_fence(t.group(1)) if t else raw
     return subject, html_body, text_body
 
 
