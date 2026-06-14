@@ -1,10 +1,7 @@
 import io
 import re
-import smtplib
 import logging
 from datetime import datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 import httpx
 from pypdf import PdfReader
@@ -12,6 +9,7 @@ from pypdf import PdfReader
 from ..config import settings
 from ..db import SessionLocal
 from ..models import File, Newsletter, NewsletterJob, SendLog
+from ..smtp import send_email
 from ..storage import load_file
 from .state import NewsletterState
 
@@ -60,15 +58,6 @@ def _parse_llm_output(raw: str) -> tuple[str, str, str]:
     return subject, html_body, text_body
 
 
-def _send_one(to: str, subject: str, html: str, text: str) -> None:
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = settings.smtp_from
-    msg["To"] = to
-    msg.attach(MIMEText(text, "plain", "utf-8"))
-    msg.attach(MIMEText(html, "html", "utf-8"))
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as s:
-        s.sendmail(settings.smtp_from, to, msg.as_string())
 
 
 # ── nodes ─────────────────────────────────────────────────────────────────────
@@ -211,7 +200,7 @@ def send_emails(state: NewsletterState) -> NewsletterState:
     try:
         for addr in emails:
             try:
-                _send_one(addr, state["subject"], state["html_body"], state["text_body"])
+                send_email(addr, state["subject"], state["html_body"], state["text_body"])
                 status = "sent"
             except Exception as e:
                 logger.error("Wysyłka do %s nie powiodła się: %s", addr, e)

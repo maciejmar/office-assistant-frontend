@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     smtp_host: str = "mailpit"
     smtp_port: int = 1025
     smtp_from: str = "newsletter@office-assistant.local"
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_tls: bool = False
     use_agent: bool = True
     external_extract_url: str = "http://localhost:8001/api/extract-text"
     qdrant_url: str = "http://qdrant:6333"
