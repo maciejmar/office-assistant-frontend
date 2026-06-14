@@ -55,7 +55,7 @@ def create_job(
         "job_id": job.id,
         "user_id": user.id,
         "file_ids": payload.fileIds,
-        "subscriber_emails": [],
+        "subscriber_emails": payload.subscriberEmails,
         "language": payload.language,
         "tone": payload.tone,
         "max_length": payload.maxLength,
