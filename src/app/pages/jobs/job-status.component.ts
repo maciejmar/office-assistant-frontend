@@ -72,8 +72,8 @@ import { ApiService, JobStatusDto } from '../../core/api.service';
     .doc {
       width: 160px;
       height: 200px;
-      background: var(--surface, #fff);
-      border: 2px solid var(--border, #e5e7eb);
+      background: #703869;
+      border: 2px solid #9b4f8e;
       border-radius: 10px;
       padding: 22px 18px 18px;
       display: flex;
@@ -81,13 +81,12 @@ import { ApiService, JobStatusDto } from '../../core/api.service';
       gap: 10px;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 0 0 0 rgba(99,102,241,0.3);
       animation: pulse-glow 2.2s ease-in-out infinite;
     }
 
     @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 4px 18px rgba(99,102,241,0.12); }
-      50%       { box-shadow: 0 4px 40px rgba(99,102,241,0.42); }
+      0%, 100% { box-shadow: 0 4px 18px rgba(112,56,105,0.3); }
+      50%       { box-shadow: 0 4px 40px rgba(155,79,142,0.7); }
     }
 
     .doc-header {
@@ -103,7 +102,7 @@ import { ApiService, JobStatusDto } from '../../core/api.service';
     .line {
       height: 7px;
       border-radius: 4px;
-      background: var(--border, #e5e7eb);
+      background: rgba(255,255,255,0.3);
       transform-origin: left;
       animation: write 1.9s ease-in-out infinite;
     }

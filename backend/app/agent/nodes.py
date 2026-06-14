@@ -132,6 +132,12 @@ WYMAGANIA:
 - Maksymalna długość treści: {state["max_length"]} słów
 - Newsletter powinien syntetyzować kluczowe informacje z dokumentów
 
+KRYTYCZNE ZASADY — MUSISZ ICH PRZESTRZEGAĆ:
+- Używaj WYŁĄCZNIE informacji, które dosłownie pojawiają się w dokumentach źródłowych
+- NIE WYMYŚLAJ żadnych imion, nazwisk, kwot, dat, numerów kont, nazw firm ani innych szczegółów
+- Jeśli jakaś informacja nie jest w dokumencie, nie pisz o niej
+- Przepisuj nazwy własne, imiona i liczby dokładnie tak jak są w dokumencie
+
 Odpowiedz WYŁĄCZNIE w poniższym formacie, używając dokładnie tych markerów:
 
 ===SUBJECT===
