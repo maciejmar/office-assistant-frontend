@@ -1,4 +1,5 @@
 import json
+import logging
 import smtplib
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
@@ -6,6 +7,8 @@ from email.mime.text import MIMEText
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from ..deps import get_db, get_current_user
 from ..models import Newsletter, NewsletterJob, SendLog, User
@@ -95,9 +98,10 @@ def send_newsletter(newsletter_id: int, user: User = Depends(get_current_user), 
             with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as s:
                 s.sendmail(settings.smtp_from, addr, msg.as_string())
             status = "sent"
-        except Exception:
+        except Exception as e:
             status = "failed"
             failed.append(addr)
+            logger.error("SMTP send to %s failed: %s", addr, e)
 
         db.add(SendLog(
             newsletter_id=row.id,
@@ -109,6 +113,9 @@ def send_newsletter(newsletter_id: int, user: User = Depends(get_current_user), 
     db.commit()
 
     if failed and len(failed) == len(subscriber_emails):
-        raise HTTPException(status_code=500, detail=f"Wysyłka nie powiodła się dla żadnego adresu.")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Wysyłka nie powiodła się (SMTP: {settings.smtp_host}:{settings.smtp_port}). Sprawdź logi backendu."
+        )
 
     return NewsletterSendOut(sent_count=len(subscriber_emails) - len(failed))
