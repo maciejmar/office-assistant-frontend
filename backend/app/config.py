@@ -15,9 +15,6 @@ class Settings(BaseSettings):
     cors_allow_credentials: bool = True
 
     storage_dir: str = "./storage"
-    n8n_webhook_url: str = "http://localhost:5678/webhook/office-assistant/newsletter/generate-v3"
-    n8n_send_webhook_url: str = ""
-
     ollama_url: str = "http://ollama:11434"
     ollama_model: str = "gemma3:latest"
     smtp_host: str = "mailpit"
