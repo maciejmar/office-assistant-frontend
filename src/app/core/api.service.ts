@@ -79,6 +79,17 @@ export class ApiService {
     return this.http.post<NewsletterSendResult>(`${this.base}/newsletters/${id}/send`, {}, { withCredentials: true });
   }
 
+  // Settings
+  getSmtpConfig() {
+    return this.http.get<any>(`${this.base}/settings/smtp`, { withCredentials: true });
+  }
+  saveSmtpConfig(cfg: { host: string; port: number; tls: boolean; username: string; password: string; from_addr: string }) {
+    return this.http.put<any>(`${this.base}/settings/smtp`, cfg, { withCredentials: true });
+  }
+  testSmtp() {
+    return this.http.post<any>(`${this.base}/settings/smtp/test`, {}, { withCredentials: true });
+  }
+
   // Jobs
   createJob(payload: { fileIds: string[]; subscriberEmails: string[]; language: string; tone: string; maxLength: number; }) {
     return this.http.post<{ jobId: string }>(`${this.base}/newsletter/jobs`, payload, { withCredentials: true });

@@ -4,6 +4,7 @@ from sqlalchemy import text, inspect as sa_inspect
 from .config import settings
 from .db import Base, engine
 from .routers import auth, subscribers, files, newsletters, jobs, extract
+from .routers import settings as settings_router
 
 
 def _run_migrations() -> None:
@@ -36,6 +37,7 @@ def create_app() -> FastAPI:
     app.include_router(newsletters.router, prefix=settings.api_prefix)
     app.include_router(jobs.router, prefix=settings.api_prefix)
     app.include_router(extract.router, prefix=settings.api_prefix)
+    app.include_router(settings_router.router, prefix=settings.api_prefix)
 
     return app
 

@@ -63,3 +63,15 @@ class SendLog(Base):
     subscriber_email: Mapped[str] = mapped_column(String(255))
     status: Mapped[str] = mapped_column(String(32))
     sent_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class UserSmtpConfig(Base):
+    __tablename__ = "user_smtp_configs"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), unique=True)
+    host: Mapped[str] = mapped_column(String(255))
+    port: Mapped[int] = mapped_column(Integer, default=587)
+    tls: Mapped[bool] = mapped_column(default=True)
+    username: Mapped[str] = mapped_column(String(255))
+    password: Mapped[str] = mapped_column(String(255))
+    from_addr: Mapped[str] = mapped_column(String(255))

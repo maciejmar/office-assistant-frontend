@@ -8,8 +8,8 @@ from pypdf import PdfReader
 
 from ..config import settings
 from ..db import SessionLocal
-from ..models import File, Newsletter, NewsletterJob, SendLog
-from ..smtp import send_email
+from ..models import File, Newsletter, NewsletterJob, SendLog, UserSmtpConfig
+from ..smtp import send_email, SmtpCreds
 from ..storage import load_file
 from .state import NewsletterState
 
@@ -198,9 +198,19 @@ def send_emails(state: NewsletterState) -> NewsletterState:
 
     db = _db()
     try:
+        smtp_row = db.query(UserSmtpConfig).filter(UserSmtpConfig.user_id == state["user_id"]).first()
+        creds = SmtpCreds(
+            host=smtp_row.host,
+            port=smtp_row.port,
+            tls=smtp_row.tls,
+            username=smtp_row.username,
+            password=smtp_row.password,
+            from_addr=smtp_row.from_addr,
+        ) if smtp_row else None
+
         for addr in emails:
             try:
-                send_email(addr, state["subject"], state["html_body"], state["text_body"])
+                send_email(addr, state["subject"], state["html_body"], state["text_body"], creds)
                 status = "sent"
             except Exception as e:
                 logger.error("Wysyłka do %s nie powiodła się: %s", addr, e)

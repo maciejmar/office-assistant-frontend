@@ -70,6 +70,24 @@ class NewsletterSendOut(BaseModel):
     sent_count: int
 
 
+class SmtpConfigIn(BaseModel):
+    host: str
+    port: int = 587
+    tls: bool = True
+    username: str
+    password: str
+    from_addr: str
+
+
+class SmtpConfigOut(BaseModel):
+    host: str
+    port: int
+    tls: bool
+    username: str
+    from_addr: str
+    configured: bool = True
+
+
 class JobCreate(BaseModel):
     fileIds: List[int]
     subscriberEmails: List[EmailStr]

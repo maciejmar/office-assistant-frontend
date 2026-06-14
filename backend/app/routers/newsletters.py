@@ -6,10 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..deps import get_db, get_current_user
-from ..models import Newsletter, NewsletterJob, SendLog, User
+from ..models import Newsletter, NewsletterJob, SendLog, User, UserSmtpConfig
 from ..schemas import NewsletterOut, NewsletterDetailOut, NewsletterSendOut
 from ..config import settings
-from ..smtp import send_email
+from ..smtp import send_email, SmtpCreds
 
 logger = logging.getLogger(__name__)
 
@@ -84,10 +84,18 @@ def send_newsletter(newsletter_id: int, user: User = Depends(get_current_user), 
     if not subscriber_emails:
         raise HTTPException(status_code=400, detail="Brak subskrybentów przypisanych do tego newslettera.")
 
+    smtp_row = db.query(UserSmtpConfig).filter(UserSmtpConfig.user_id == user.id).first()
+    if not smtp_row:
+        raise HTTPException(status_code=400, detail="Skonfiguruj ustawienia SMTP w Ustawieniach przed wysyłką.")
+    creds = SmtpCreds(
+        host=smtp_row.host, port=smtp_row.port, tls=smtp_row.tls,
+        username=smtp_row.username, password=smtp_row.password, from_addr=smtp_row.from_addr,
+    )
+
     failed: list[str] = []
     for addr in subscriber_emails:
         try:
-            send_email(addr, row.subject, row.html_body, row.text_body)
+            send_email(addr, row.subject, row.html_body, row.text_body, creds)
             status = "sent"
         except Exception as e:
             status = "failed"
