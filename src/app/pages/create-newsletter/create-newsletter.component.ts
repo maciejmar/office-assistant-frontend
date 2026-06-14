@@ -65,10 +65,16 @@ type UploadItem = {
     <div class="error" *ngIf="filesError">{{filesError}}</div>
     <div class="list" *ngIf="files.length; else emptyFiles">
       <div class="item file-item" *ngFor="let f of files">
-        <div>
-          <div><b>{{f.filename}}</b></div>
-          <div class="muted">status: {{f.status}} <span *ngIf="f.uploaded_at">| uploaded: {{f.uploaded_at}}</span></div>
-        </div>
+        <label class="file-select">
+          <input type="checkbox"
+            [checked]="selectedLibraryIds.has(f.id)"
+            [disabled]="f.status !== 'ready' && f.status !== 'uploaded'"
+            (change)="toggleLibraryFile(f.id, $event)" />
+          <div>
+            <div><b>{{f.filename}}</b></div>
+            <div class="muted">status: {{f.status}} <span *ngIf="f.uploaded_at">| uploaded: {{f.uploaded_at}}</span></div>
+          </div>
+        </label>
         <button class="danger" (click)="deleteFile(f.id)">Delete</button>
       </div>
     </div>
@@ -140,6 +146,7 @@ type UploadItem = {
     .list { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
     .item { padding: 10px; border: 1px solid #eee; border-radius: 8px; }
     .file-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .file-select { display: flex; gap: 10px; align-items: center; cursor: pointer; flex: 1; }
     .muted { color: #666; font-size: 13px; }
     .err { color: #b00; }
     .warn {
@@ -189,6 +196,7 @@ export class CreateNewsletterComponent {
   subs: SubscriberDto[] = [];
   selected = new Set<string>();
   files: FileDto[] = [];
+  selectedLibraryIds = new Set<string>();
 
   language = 'pl';
   tone = 'professional';
@@ -263,9 +271,17 @@ export class CreateNewsletterComponent {
     this.filesError = '';
     try {
       this.files = await firstValueFrom(this.api.listFiles());
+      this.selectedLibraryIds = new Set(
+        this.files.filter(f => f.status === 'ready' || f.status === 'uploaded').map(f => String(f.id))
+      );
     } catch (e: any) {
       this.filesError = e?.error?.detail || 'Failed to load uploaded files.';
     }
+  }
+
+  toggleLibraryFile(id: string, ev: Event) {
+    if ((ev.target as HTMLInputElement).checked) this.selectedLibraryIds.add(String(id));
+    else this.selectedLibraryIds.delete(String(id));
   }
 
   onFiles(ev: Event) {
@@ -356,12 +372,14 @@ export class CreateNewsletterComponent {
     this.generating = true;
 
     try {
-      const fileIds = this.uploads
+      const uploadedIds = this.uploads
         .filter((u) => u.status === 'done' && u.fileId)
         .map((u) => u.fileId as string);
+      const libraryIds = Array.from(this.selectedLibraryIds);
+      const fileIds = [...new Set([...uploadedIds, ...libraryIds])];
 
       if (!fileIds.length) {
-        throw new Error('Upload at least one PDF first (Upload selected).');
+        throw new Error('Select at least one PDF from the library or upload a new one.');
       }
 
       if (this.selectedUploadBytes > this.maxJobInputBytes) {
