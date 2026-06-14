@@ -84,23 +84,9 @@ services:
     depends_on:
       - backend
 
-  n8n:
-    image: n8nio/n8n:2.6.4
-    container_name: oa_n8n
-    restart: unless-stopped
-    env_file:
-      - /opt/office-assistant.env
-    ports:
-      - "127.0.0.1:5678:5678"
-    volumes:
-      - oa_n8n_data:/home/node/.n8n
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
 volumes:
   oa_pg_data:
   oa_pgadmin_data:
   oa_qdrant_data:
   oa_ollama_data:
-  oa_n8n_data:
   oa_storage:

@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     storage_dir: str = "./storage"
     n8n_webhook_url: str = "http://localhost:5678/webhook/office-assistant/newsletter/generate-v3"
     n8n_send_webhook_url: str = ""
+
+    ollama_url: str = "http://ollama:11434"
+    ollama_model: str = "llama3.2"
+    smtp_host: str = "mailpit"
+    smtp_port: int = 1025
+    smtp_from: str = "newsletter@office-assistant.local"
+    use_agent: bool = True
     external_extract_url: str = "http://localhost:8001/api/extract-text"
     qdrant_url: str = "http://qdrant:6333"
     qdrant_collection: str = "documents"

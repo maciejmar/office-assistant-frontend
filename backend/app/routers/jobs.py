@@ -1,12 +1,12 @@
 from datetime import datetime
 import json
-import httpx
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..deps import get_db, get_current_user
 from ..models import NewsletterJob, Newsletter, User, File
 from ..schemas import JobCreate, JobCreateOut, JobStatusOut
 from ..config import settings
+from ..agent.runner import run_newsletter_job
 
 router = APIRouter(prefix="/newsletter/jobs", tags=["jobs"])
 
@@ -14,9 +14,9 @@ router = APIRouter(prefix="/newsletter/jobs", tags=["jobs"])
 @router.post("", response_model=JobCreateOut)
 def create_job(
     payload: JobCreate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    authorization: str | None = Header(default=None),
 ):
     selected_files = (
         db.query(File)
@@ -33,7 +33,7 @@ def create_job(
             status_code=422,
             detail=(
                 f"Selected files are too large for generation ({round(total_bytes / (1024 * 1024), 1)} MB). "
-                f"Limit is {settings.max_job_total_input_mb} MB. Remove some old/large PDFs."
+                f"Limit is {settings.max_job_total_input_mb} MB."
             ),
         )
 
@@ -47,39 +47,16 @@ def create_job(
     db.commit()
     db.refresh(job)
 
-    access_token = None
-    if authorization and authorization.startswith("Bearer "):
-        access_token = authorization.split(" ", 1)[1]
-
-    webhook_payload = {
-        "job_id": job.id,
-        "user_id": user.id,
-        "file_ids": payload.fileIds,
-        "subscriber_emails": payload.subscriberEmails,
-        "language": payload.language,
-        "tone": payload.tone,
-        "max_length": payload.maxLength,
-        "subject_hint": "",
-        "access_token": access_token,
-    }
-
-    try:
-        with httpx.Client(timeout=20) as client:
-            resp = client.post(settings.n8n_webhook_url, json=webhook_payload)
-            if resp.status_code >= 400:
-                job.status = "failed"
-                job.error = f"Workflow trigger failed: {resp.status_code} {resp.text[:300]}"
-                db.add(job)
-                db.commit()
-                raise HTTPException(status_code=502, detail="Workflow trigger returned error")
-    except HTTPException:
-        raise
-    except Exception as exc:
-        job.status = "failed"
-        job.error = str(exc)
-        db.add(job)
-        db.commit()
-        raise HTTPException(status_code=500, detail="Failed to trigger workflow")
+    background_tasks.add_task(
+        run_newsletter_job,
+        job_id=job.id,
+        user_id=user.id,
+        file_ids=payload.fileIds,
+        subscriber_emails=[str(e) for e in payload.subscriberEmails],
+        language=payload.language,
+        tone=payload.tone,
+        max_length=payload.maxLength,
+    )
 
     return JobCreateOut(jobId=job.id)
 
