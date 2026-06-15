@@ -124,6 +124,15 @@ type UploadItem = {
       </label>
     </div>
 
+    <label class="prompt-label">
+      Dodatkowe instrukcje dla AI <span class="opt">(opcjonalne)</span>
+      <textarea
+        [(ngModel)]="customPrompt"
+        rows="3"
+        placeholder="np. Skup się na sekcji dotyczącej płatności. Pomiń informacje o terminach. Zacznij od podsumowania kwot."
+      ></textarea>
+    </label>
+
     <div class="error" *ngIf="error">{{error}}</div>
     <div class="muted">
       Selected input size: {{selectedUploadMb}} MB / {{maxJobInputMb}} MB
@@ -178,6 +187,9 @@ type UploadItem = {
     }
     input[type="number"] { width: 120px; }
     select { padding: 6px; }
+    .prompt-label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #555; margin: 14px 0 10px; }
+    .opt { font-weight: 400; color: #999; }
+    textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; resize: vertical; font-family: inherit; box-sizing: border-box; }
   `],
 })
 export class CreateNewsletterComponent {
@@ -201,6 +213,7 @@ export class CreateNewsletterComponent {
   language = 'pl';
   tone = 'professional';
   maxLength = 900;
+  customPrompt = '';
 
   constructor(private api: ApiService, private router: Router) {
     this.loadSubs();
@@ -400,6 +413,7 @@ export class CreateNewsletterComponent {
           language: this.language,
           tone: this.tone,
           maxLength: this.maxLength,
+          customPrompt: this.customPrompt.trim() || undefined,
         }),
       );
 

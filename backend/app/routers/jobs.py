@@ -56,6 +56,7 @@ def create_job(
         language=payload.language,
         tone=payload.tone,
         max_length=payload.maxLength,
+        custom_prompt=payload.customPrompt or None,
     )
 
     return JobCreateOut(jobId=job.id)

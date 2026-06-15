@@ -94,6 +94,7 @@ class JobCreate(BaseModel):
     language: str
     tone: str
     maxLength: int
+    customPrompt: Optional[str] = None
 
 
 class JobCreateOut(BaseModel):

@@ -91,7 +91,7 @@ export class ApiService {
   }
 
   // Jobs
-  createJob(payload: { fileIds: string[]; subscriberEmails: string[]; language: string; tone: string; maxLength: number; }) {
+  createJob(payload: { fileIds: string[]; subscriberEmails: string[]; language: string; tone: string; maxLength: number; customPrompt?: string; }) {
     return this.http.post<{ jobId: string }>(`${this.base}/newsletter/jobs`, payload, { withCredentials: true });
   }
   getJob(jobId: string) {

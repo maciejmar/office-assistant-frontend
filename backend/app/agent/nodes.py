@@ -121,6 +121,10 @@ def generate_newsletter(state: NewsletterState) -> NewsletterState:
     tone_desc = tone_map.get(state["tone"], state["tone"])
     lang_desc = "polskim" if state["language"] == "pl" else "English"
 
+    custom_prompt_section = ""
+    if state.get("custom_prompt", "").strip():
+        custom_prompt_section = f"\nDODATKOWE INSTRUKCJE OD UŻYTKOWNIKA:\n{state['custom_prompt'].strip()}\n"
+
     prompt = f"""Jesteś ekspertem od pisania newsletterów. Na podstawie poniższych dokumentów stwórz newsletter.
 
 DOKUMENTY ŹRÓDŁOWE:
@@ -131,7 +135,7 @@ WYMAGANIA:
 - Ton: {tone_desc}
 - Maksymalna długość treści: {state["max_length"]} słów
 - Newsletter powinien syntetyzować kluczowe informacje z dokumentów
-
+{custom_prompt_section}
 KRYTYCZNE ZASADY — MUSISZ ICH PRZESTRZEGAĆ:
 - Używaj WYŁĄCZNIE informacji, które dosłownie pojawiają się w dokumentach źródłowych
 - NIE WYMYŚLAJ żadnych imion, nazwisk, kwot, dat, numerów kont, nazw firm ani innych szczegółów

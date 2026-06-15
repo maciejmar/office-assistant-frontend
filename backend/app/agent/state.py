@@ -9,6 +9,7 @@ class NewsletterState(TypedDict):
     language: str
     tone: str
     max_length: int
+    custom_prompt: Optional[str]
     combined_text: str
     subject: str
     html_body: str

@@ -22,6 +22,7 @@ def run_newsletter_job(
     language: str,
     tone: str,
     max_length: int,
+    custom_prompt: str | None = None,
 ) -> None:
     state: NewsletterState = {
         "job_id": job_id,
@@ -31,6 +32,7 @@ def run_newsletter_job(
         "language": language,
         "tone": tone,
         "max_length": max_length,
+        "custom_prompt": custom_prompt,
         "combined_text": "",
         "subject": "",
         "html_body": "",
