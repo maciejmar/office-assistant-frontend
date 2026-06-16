@@ -106,8 +106,8 @@ export class InboxReportComponent implements OnDestroy {
   imapPort = 993;
   username = '';
   password = '';
-  daysBack = 90;
-  maxEmails = 40;
+  daysBack = 60;
+  maxEmails = 15;
 
   loading = false;
   error = '';

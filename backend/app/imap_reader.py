@@ -108,7 +108,7 @@ def fetch_financial_emails(
                 if not _is_financial(subject, body):
                     continue
 
-                snippet = body.strip()[:300]
+                snippet = body.strip()[:200]
                 results.append(EmailSummary(
                     subject=subject,
                     sender=sender,

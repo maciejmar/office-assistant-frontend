@@ -104,7 +104,7 @@ ZASADY:
             with httpx.Client(timeout=300) as client:
                 resp = client.post(
                     f"{settings.ollama_url}/api/generate",
-                    json={"model": settings.ollama_model, "prompt": prompt, "stream": False},
+                    json={"model": settings.ollama_model, "prompt": prompt, "stream": False, "options": {"num_predict": 3000}},
                 )
                 resp.raise_for_status()
                 raw = resp.json().get("response", "")
