@@ -36,7 +36,7 @@ def save_smtp(payload: SmtpConfigIn, user: User = Depends(get_current_user), db:
         cfg.tls = payload.tls
         cfg.username = payload.username
         if payload.password:
-            cfg.password = payload.password
+            cfg.password = payload.password.replace(" ", "")
         cfg.from_addr = payload.from_addr
         cfg.imap_host = payload.imap_host
         cfg.imap_port = payload.imap_port

@@ -34,6 +34,10 @@ def start_inbox_report(
         user_id=user.id,
         days_back=payload.days_back,
         max_emails=payload.max_emails,
+        imap_host=payload.imap_host or None,
+        imap_port=payload.imap_port,
+        username=payload.username or None,
+        password=payload.password or None,
     )
 
     return InboxJobCreateOut(jobId=job.id)

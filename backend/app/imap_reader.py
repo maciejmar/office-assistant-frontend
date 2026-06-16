@@ -78,7 +78,7 @@ def fetch_financial_emails(
     since_date = (datetime.utcnow() - timedelta(days=days_back)).strftime("%d-%b-%Y")
 
     with imaplib.IMAP4_SSL(imap_host, imap_port) as imap:
-        imap.login(username, password)
+        imap.login(username, password.replace(" ", ""))
         imap.select("INBOX")
 
         _, ids = imap.search(None, f'(SINCE "{since_date}")')
@@ -108,7 +108,7 @@ def fetch_financial_emails(
                 if not _is_financial(subject, body):
                     continue
 
-                snippet = body.strip()[:800]
+                snippet = body.strip()[:300]
                 results.append(EmailSummary(
                     subject=subject,
                     sender=sender,

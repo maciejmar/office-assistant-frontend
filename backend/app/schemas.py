@@ -95,6 +95,10 @@ class SmtpConfigOut(BaseModel):
 class InboxJobCreate(BaseModel):
     days_back: int = 90
     max_emails: int = 40
+    imap_host: Optional[str] = None
+    imap_port: int = 993
+    username: Optional[str] = None
+    password: Optional[str] = None
 
 
 class InboxJobCreateOut(BaseModel):

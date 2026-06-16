@@ -85,7 +85,7 @@ export class ApiService {
   getSmtpConfig() {
     return this.http.get<any>(`${this.base}/settings/smtp`, { withCredentials: true });
   }
-  saveSmtpConfig(cfg: { host: string; port: number; tls: boolean; username: string; password: string; from_addr: string }) {
+  saveSmtpConfig(cfg: { host: string; port: number; tls: boolean; username: string; password: string; from_addr: string; imap_host?: string; imap_port?: number }) {
     return this.http.put<any>(`${this.base}/settings/smtp`, cfg, { withCredentials: true });
   }
   testSmtp() {
@@ -93,10 +93,17 @@ export class ApiService {
   }
 
   // Reports
-  startInboxReport(daysBack = 90, maxEmails = 40) {
+  startInboxReport(payload: { daysBack?: number; maxEmails?: number; imapHost?: string; imapPort?: number; username?: string; password?: string }) {
     return this.http.post<InboxJobDto>(
       `${this.base}/reports/inbox`,
-      { days_back: daysBack, max_emails: maxEmails },
+      {
+        days_back: payload.daysBack ?? 90,
+        max_emails: payload.maxEmails ?? 40,
+        imap_host: payload.imapHost || undefined,
+        imap_port: payload.imapPort ?? 993,
+        username: payload.username || undefined,
+        password: payload.password || undefined,
+      },
       { withCredentials: true },
     );
   }

@@ -12,7 +12,16 @@ from ..models import InboxReportJob, UserSmtpConfig
 logger = logging.getLogger(__name__)
 
 
-def run_inbox_report(job_id: int, user_id: int, days_back: int, max_emails: int) -> None:
+def run_inbox_report(
+    job_id: int,
+    user_id: int,
+    days_back: int,
+    max_emails: int,
+    imap_host: str | None = None,
+    imap_port: int = 993,
+    username: str | None = None,
+    password: str | None = None,
+) -> None:
     db = SessionLocal()
     try:
         job = db.query(InboxReportJob).filter(InboxReportJob.id == job_id).first()
@@ -21,20 +30,26 @@ def run_inbox_report(job_id: int, user_id: int, days_back: int, max_emails: int)
         job.status = "running"
         db.commit()
 
-        cfg = db.query(UserSmtpConfig).filter(UserSmtpConfig.user_id == user_id).first()
-        if not cfg or not cfg.imap_host:
-            job.status = "failed"
-            job.error = "Brak konfiguracji IMAP. Uzupełnij serwer IMAP w Ustawieniach."
-            job.finished_at = datetime.utcnow()
-            db.commit()
-            return
+        # use provided credentials or fall back to stored config
+        if not imap_host or not username or not password:
+            cfg = db.query(UserSmtpConfig).filter(UserSmtpConfig.user_id == user_id).first()
+            if not cfg or not cfg.imap_host:
+                job.status = "failed"
+                job.error = "Brak konfiguracji IMAP. Uzupełnij serwer IMAP w Ustawieniach lub podaj dane ręcznie."
+                job.finished_at = datetime.utcnow()
+                db.commit()
+                return
+            imap_host = imap_host or cfg.imap_host
+            imap_port = imap_port or cfg.imap_port or 993
+            username = username or cfg.username
+            password = password or cfg.password
 
         try:
             emails = fetch_financial_emails(
-                imap_host=cfg.imap_host,
-                imap_port=cfg.imap_port or 993,
-                username=cfg.username,
-                password=cfg.password,
+                imap_host=imap_host,
+                imap_port=imap_port,
+                username=username,
+                password=password,
                 days_back=days_back,
                 max_emails=max_emails,
             )
@@ -53,14 +68,21 @@ def run_inbox_report(job_id: int, user_id: int, days_back: int, max_emails: int)
             db.commit()
             return
 
-        emails_text = "\n\n".join(
-            f"--- [{i+1}] ---\nData: {e.date}\nOd: {e.sender}\nTemat: {e.subject}\nTreść:\n{e.snippet}"
-            for i, e in enumerate(emails)
-        )
+        MAX_TOTAL_CHARS = 10_000
+        emails_text_parts = []
+        total = 0
+        for i, e in enumerate(emails):
+            part = f"--- [{i+1}] ---\nData: {e.date}\nOd: {e.sender}\nTemat: {e.subject}\nTreść:\n{e.snippet}"
+            if total + len(part) > MAX_TOTAL_CHARS:
+                break
+            emails_text_parts.append(part)
+            total += len(part)
+        emails_text = "\n\n".join(emails_text_parts)
+        included = len(emails_text_parts)
 
         prompt = f"""Jesteś asystentem finansowym. Przeanalizuj poniższe wiadomości e-mail z skrzynki użytkownika i przygotuj czytelny raport finansowy.
 
-WIADOMOŚCI E-MAIL ({len(emails)} szt., ostatnie {days_back} dni):
+WIADOMOŚCI E-MAIL ({included} z {len(emails)} szt., ostatnie {days_back} dni):
 {emails_text}
 
 ZADANIE:
@@ -95,6 +117,13 @@ ZASADY:
 
         html = re.sub(r"^```[a-zA-Z]*\n?", "", raw.strip())
         html = re.sub(r"\n?```$", "", html.strip()).strip()
+
+        if not html:
+            job.status = "failed"
+            job.error = "Model LLM zwrócił pustą odpowiedź. Spróbuj zmniejszyć zakres dni lub liczbę e-maili."
+            job.finished_at = datetime.utcnow()
+            db.commit()
+            return
 
         job.status = "done"
         job.result_html = html

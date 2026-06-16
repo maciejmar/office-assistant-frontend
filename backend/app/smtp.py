@@ -42,5 +42,5 @@ def send_email(to: str, subject: str, html: str, text: str, creds: SmtpCreds | N
             s.starttls()
             s.ehlo()
         if c.username and c.password:
-            s.login(c.username, c.password)
+            s.login(c.username, c.password.replace(" ", ""))
         s.sendmail(c.from_addr, to, msg.as_string())

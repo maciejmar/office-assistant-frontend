@@ -12,41 +12,65 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
     <section class="panel">
       <p class="desc">
-        Aplikacja połączy się z Twoją skrzynką via IMAP, wyszuka wiadomości dotyczące
+        Aplikacja połączy się z podaną skrzynką via IMAP, wyszuka wiadomości dotyczące
         płatności, faktur i składek, a następnie wygeneruje raport przy użyciu AI.
         Może to potrwać kilka minut.
       </p>
 
-      <div class="form-row">
+      <h3>Konto IMAP</h3>
+
+      <div class="grid-2">
+        <label>
+          Serwer IMAP
+          <input [(ngModel)]="imapHost" placeholder="imap.gmail.com" [disabled]="loading" />
+        </label>
         <label class="short">
+          Port
+          <input [(ngModel)]="imapPort" type="number" [disabled]="loading" />
+        </label>
+      </div>
+
+      <label>
+        Login (adres e-mail)
+        <input [(ngModel)]="username" type="email" placeholder="twoj@gmail.com" [disabled]="loading" />
+      </label>
+
+      <label>
+        Hasło / App Password
+        <input [(ngModel)]="password" type="password" placeholder="••••••••" [disabled]="loading" />
+      </label>
+
+      <div class="hint">
+        Dane domyślnie pobrane z <a href="/app/settings">Ustawień</a>.
+        Możesz wpisać inne konto — dane nie są zapisywane.
+      </div>
+
+      <h3>Parametry analizy</h3>
+
+      <div class="grid-2">
+        <label>
           Zakres dni wstecz
           <input [(ngModel)]="daysBack" type="number" min="7" max="365" [disabled]="loading" />
         </label>
-        <label class="short">
+        <label>
           Maks. e-maili
           <input [(ngModel)]="maxEmails" type="number" min="5" max="100" [disabled]="loading" />
         </label>
       </div>
 
-      <div class="hint">
-        Serwer IMAP oraz hasło pobierane są z <a href="/app/settings">Ustawień</a>.
-      </div>
-
-      <button (click)="start()" [disabled]="loading">
+      <button (click)="start()" [disabled]="loading || !imapHost || !username || !password">
         {{ loading ? 'Generowanie…' : 'Generuj raport' }}
       </button>
 
-      <!-- loading state -->
       <div class="progress" *ngIf="loading">
         <div class="spinner"></div>
-        <span>{{ statusLabel }}</span>
+        <span>Analizuję skrzynkę i generuję raport…</span>
         <span class="elapsed">{{ elapsed }}</span>
       </div>
 
       <div class="error" *ngIf="error">{{ error }}</div>
     </section>
 
-    <!-- wyniki -->
     <section class="report-panel" *ngIf="reportHtml">
       <div class="report-meta">
         Przeanalizowano <strong>{{ emailCount }}</strong> wiadomości finansowych
@@ -57,32 +81,20 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   `,
   styles: [`
     h1 { margin-bottom: 20px; }
+    h3 { margin: 18px 0 10px; font-size: 0.95rem; color: var(--muted, #aaa); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
     .panel { border: 1px solid var(--border); border-radius: 12px; padding: 20px; max-width: 720px; }
-    .desc { color: var(--muted, #888); font-size: 0.9rem; margin-bottom: 18px; line-height: 1.6; }
-    .form-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
-    label { display: flex; flex-direction: column; gap: 6px; font-size: 0.88rem; color: var(--muted, #888); }
-    label.short { flex: 0 0 140px; }
-    input { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); font-size: 0.9rem; }
-    .hint { font-size: 0.82rem; color: var(--muted, #888); margin-bottom: 16px; }
+    .desc { color: var(--muted, #888); font-size: 0.9rem; margin-bottom: 4px; line-height: 1.6; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 110px; gap: 12px; }
+    label { display: flex; flex-direction: column; gap: 6px; font-size: 0.88rem; color: var(--muted, #888); margin-bottom: 12px; }
+    .hint { font-size: 0.82rem; color: var(--muted, #888); margin: 4px 0 18px; }
     .hint a { color: var(--text); }
     button { padding: 10px 22px; border-radius: 10px; cursor: pointer; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     .error { color: var(--danger, #b00); margin-top: 12px; font-size: 0.9rem; }
-
-    .progress {
-      display: flex; align-items: center; gap: 12px;
-      margin-top: 16px; color: var(--muted, #888); font-size: 0.88rem;
-    }
-    .spinner {
-      width: 18px; height: 18px; border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.15);
-      border-top-color: var(--primary, #58f2c4);
-      animation: spin 0.8s linear infinite;
-      flex-shrink: 0;
-    }
+    .progress { display: flex; align-items: center; gap: 12px; margin-top: 16px; color: var(--muted, #888); font-size: 0.88rem; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--primary, #58f2c4); animation: spin 0.8s linear infinite; flex-shrink: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .elapsed { color: var(--muted, #888); font-size: 0.8rem; }
-
+    .elapsed { font-size: 0.8rem; }
     .report-panel { margin-top: 28px; border: 1px solid var(--border); border-radius: 12px; padding: 24px; max-width: 860px; }
     .report-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 0.88rem; color: var(--muted, #888); }
     .print-btn { padding: 6px 14px; font-size: 0.82rem; border-radius: 8px; }
@@ -90,8 +102,13 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   `]
 })
 export class InboxReportComponent implements OnDestroy {
+  imapHost = '';
+  imapPort = 993;
+  username = '';
+  password = '';
   daysBack = 90;
   maxEmails = 40;
+
   loading = false;
   error = '';
   reportHtml: SafeHtml | null = null;
@@ -103,11 +120,16 @@ export class InboxReportComponent implements OnDestroy {
   private startedAt = 0;
   private currentJobId: number | null = null;
 
-  get statusLabel(): string {
-    return this.currentJobId ? 'Analizuję skrzynkę i generuję raport…' : 'Uruchamianie…';
+  constructor(private api: ApiService, private sanitizer: DomSanitizer) {
+    this.api.getSmtpConfig().subscribe({
+      next: (cfg: any) => {
+        this.imapHost = cfg.imap_host || '';
+        this.imapPort = cfg.imap_port || 993;
+        this.username = cfg.username || '';
+      },
+      error: () => {},
+    });
   }
-
-  constructor(private api: ApiService, private sanitizer: DomSanitizer) {}
 
   start() {
     this.error = '';
@@ -123,7 +145,14 @@ export class InboxReportComponent implements OnDestroy {
       this.elapsed = m > 0 ? `${m} min ${s % 60} s` : `${s} s`;
     }, 1000);
 
-    this.api.startInboxReport(this.daysBack, this.maxEmails).subscribe({
+    this.api.startInboxReport({
+      daysBack: this.daysBack,
+      maxEmails: this.maxEmails,
+      imapHost: this.imapHost,
+      imapPort: this.imapPort,
+      username: this.username,
+      password: this.password,
+    }).subscribe({
       next: (res: { jobId: number }) => {
         this.currentJobId = res.jobId;
         this.pollTimer = setInterval(() => this.poll(), 3000);
@@ -131,6 +160,7 @@ export class InboxReportComponent implements OnDestroy {
       error: (e: any) => {
         this.error = e?.error?.detail || 'Nie udało się uruchomić raportu';
         this.stopTimers();
+        this.loading = false;
       },
     });
   }
