@@ -17,11 +17,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       </p>
 
       <div class="form-row">
-        <label>
-          Adres e-mail skrzynki
-          <input [(ngModel)]="email" type="email" placeholder="twoj@gmail.com" />
-        </label>
-
         <label class="short">
           Zakres dni wstecz
           <input [(ngModel)]="daysBack" type="number" min="7" max="365" />
@@ -38,7 +33,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
         Upewnij się że masz skonfigurowany serwer IMAP.
       </div>
 
-      <button (click)="generate()" [disabled]="loading || !email">
+      <button (click)="generate()" [disabled]="loading">
         {{ loading ? 'Analizuję skrzynkę…' : 'Generuj raport' }}
       </button>
 
@@ -107,7 +102,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   `]
 })
 export class InboxReportComponent {
-  email = '';
   daysBack = 90;
   maxEmails = 40;
   loading = false;
@@ -115,20 +109,14 @@ export class InboxReportComponent {
   reportHtml: SafeHtml | null = null;
   emailCount = 0;
 
-  constructor(private api: ApiService, private sanitizer: DomSanitizer) {
-    // prefill from SMTP config
-    this.api.getSmtpConfig().subscribe({
-      next: (cfg) => { if (cfg?.from_addr) this.email = cfg.from_addr; },
-      error: () => {},
-    });
-  }
+  constructor(private api: ApiService, private sanitizer: DomSanitizer) {}
 
   generate() {
     this.error = '';
     this.reportHtml = null;
     this.loading = true;
 
-    this.api.generateInboxReport(this.email, this.daysBack, this.maxEmails).subscribe({
+    this.api.generateInboxReport('', this.daysBack, this.maxEmails).subscribe({
       next: (res) => {
         this.emailCount = res.email_count;
         this.reportHtml = this.sanitizer.bypassSecurityTrustHtml(res.html);
