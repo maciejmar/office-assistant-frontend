@@ -123,7 +123,10 @@ export class InboxReportComponent {
         this.loading = false;
       },
       error: (e) => {
-        this.error = e?.error?.detail || 'Błąd generowania raportu';
+        const detail = e?.error?.detail;
+        this.error = Array.isArray(detail)
+          ? detail.map((d: any) => d.msg || JSON.stringify(d)).join('; ')
+          : detail || e?.message || `HTTP ${e?.status}: Błąd generowania raportu`;
         this.loading = false;
       },
     });
