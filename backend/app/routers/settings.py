@@ -22,6 +22,8 @@ def get_smtp(user: User = Depends(get_current_user), db: Session = Depends(get_d
         tls=cfg.tls,
         username=cfg.username,
         from_addr=cfg.from_addr,
+        imap_host=cfg.imap_host,
+        imap_port=cfg.imap_port or 993,
     )
 
 
@@ -35,6 +37,8 @@ def save_smtp(payload: SmtpConfigIn, user: User = Depends(get_current_user), db:
         cfg.username = payload.username
         cfg.password = payload.password
         cfg.from_addr = payload.from_addr
+        cfg.imap_host = payload.imap_host
+        cfg.imap_port = payload.imap_port
     else:
         cfg = UserSmtpConfig(
             user_id=user.id,
@@ -44,6 +48,8 @@ def save_smtp(payload: SmtpConfigIn, user: User = Depends(get_current_user), db:
             username=payload.username,
             password=payload.password,
             from_addr=payload.from_addr,
+            imap_host=payload.imap_host,
+            imap_port=payload.imap_port,
         )
         db.add(cfg)
     db.commit()
@@ -53,6 +59,8 @@ def save_smtp(payload: SmtpConfigIn, user: User = Depends(get_current_user), db:
         tls=cfg.tls,
         username=cfg.username,
         from_addr=cfg.from_addr,
+        imap_host=cfg.imap_host,
+        imap_port=cfg.imap_port or 993,
     )
 
 

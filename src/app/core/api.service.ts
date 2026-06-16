@@ -15,6 +15,7 @@ export interface NewsletterDto { id: string; subject: string; created_at: string
 export interface NewsletterDetailDto { id: string; subject: string; html_body: string; text_body: string; created_at: string; pending_subscriber_count?: number; }
 export interface NewsletterSendResult { sent_count: number; }
 export interface JobStatusDto { status: 'queued'|'running'|'done'|'failed'; newsletterId?: string; progress?: number; error?: string; }
+export interface InboxReportDto { html: string; email_count: number; }
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -88,6 +89,15 @@ export class ApiService {
   }
   testSmtp() {
     return this.http.post<any>(`${this.base}/settings/smtp/test`, {}, { withCredentials: true });
+  }
+
+  // Reports
+  generateInboxReport(email: string, daysBack = 90, maxEmails = 40) {
+    return this.http.post<InboxReportDto>(
+      `${this.base}/reports/inbox`,
+      { email, days_back: daysBack, max_emails: maxEmails },
+      { withCredentials: true },
+    );
   }
 
   // Jobs

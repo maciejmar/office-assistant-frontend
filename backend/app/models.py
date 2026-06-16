@@ -75,3 +75,5 @@ class UserSmtpConfig(Base):
     username: Mapped[str] = mapped_column(String(255))
     password: Mapped[str] = mapped_column(String(255))
     from_addr: Mapped[str] = mapped_column(String(255))
+    imap_host: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    imap_port: Mapped[int] = mapped_column(Integer, default=993)

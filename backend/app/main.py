@@ -5,6 +5,7 @@ from .config import settings
 from .db import Base, engine
 from .routers import auth, subscribers, files, newsletters, jobs, extract
 from .routers import settings as settings_router
+from .routers import reports as reports_router
 
 
 def _run_migrations() -> None:
@@ -14,6 +15,14 @@ def _run_migrations() -> None:
         with engine.connect() as conn:
             conn.execute(text("ALTER TABLE newsletter_jobs ADD COLUMN subscriber_emails TEXT"))
             conn.commit()
+
+    smtp_cols = {c["name"] for c in inspector.get_columns("user_smtp_configs")}
+    with engine.connect() as conn:
+        if "imap_host" not in smtp_cols:
+            conn.execute(text("ALTER TABLE user_smtp_configs ADD COLUMN imap_host VARCHAR(255)"))
+        if "imap_port" not in smtp_cols:
+            conn.execute(text("ALTER TABLE user_smtp_configs ADD COLUMN imap_port INTEGER DEFAULT 993"))
+        conn.commit()
 
 
 def create_app() -> FastAPI:
@@ -38,6 +47,7 @@ def create_app() -> FastAPI:
     app.include_router(jobs.router, prefix=settings.api_prefix)
     app.include_router(extract.router, prefix=settings.api_prefix)
     app.include_router(settings_router.router, prefix=settings.api_prefix)
+    app.include_router(reports_router.router, prefix=settings.api_prefix)
 
     return app
 

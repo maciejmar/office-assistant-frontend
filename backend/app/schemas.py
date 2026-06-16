@@ -77,6 +77,8 @@ class SmtpConfigIn(BaseModel):
     username: str
     password: str
     from_addr: str
+    imap_host: Optional[str] = None
+    imap_port: int = 993
 
 
 class SmtpConfigOut(BaseModel):
@@ -85,7 +87,20 @@ class SmtpConfigOut(BaseModel):
     tls: bool
     username: str
     from_addr: str
+    imap_host: Optional[str] = None
+    imap_port: int = 993
     configured: bool = True
+
+
+class InboxReportIn(BaseModel):
+    email: str
+    days_back: int = 90
+    max_emails: int = 40
+
+
+class InboxReportOut(BaseModel):
+    html: str
+    email_count: int
 
 
 class JobCreate(BaseModel):

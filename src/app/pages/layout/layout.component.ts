@@ -15,6 +15,7 @@ import { AuthService } from '../../core/auth.service';
           <a routerLink="/app/subscribers" routerLinkActive="active">Subscribers</a>
           <a routerLink="/app/create" routerLinkActive="active">Create</a>
           <a routerLink="/app/newsletters" routerLinkActive="active">Newsletters</a>
+          <a routerLink="/app/inbox-report" routerLinkActive="active">Inbox Report</a>
           <a routerLink="/app/settings" routerLinkActive="active">Settings</a>
         </nav>
         <button class="logout" (click)="logout()">Logout</button>

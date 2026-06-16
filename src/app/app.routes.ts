@@ -11,6 +11,7 @@ import { NewslettersComponent } from './pages/newsletters/newsletters.component'
 import { NewsletterPreviewComponent } from './pages/newsletters/newsletter-preview.component';
 import { JobStatusComponent } from './pages/jobs/job-status.component';
 import { SettingsComponent } from './pages/settings/settings.component';
+import { InboxReportComponent } from './pages/inbox-report/inbox-report.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'app' },
@@ -31,6 +32,7 @@ export const routes: Routes = [
       { path: 'newsletters', component: NewslettersComponent, pathMatch: 'full' },
       { path: 'jobs/:jobId', component: JobStatusComponent },
       { path: 'settings', component: SettingsComponent },
+      { path: 'inbox-report', component: InboxReportComponent },
     ],
   },
 

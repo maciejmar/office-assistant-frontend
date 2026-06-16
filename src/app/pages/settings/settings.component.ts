@@ -46,10 +46,24 @@ import { ApiService } from '../../core/api.service';
         </label>
 
         <div class="hint">
-          <b>Gmail:</b> host <code>smtp.gmail.com</code>, port <code>587</code>, TLS ✓, użyj
+          <b>Gmail:</b> SMTP <code>smtp.gmail.com:587</code> / IMAP <code>imap.gmail.com:993</code>, TLS ✓, użyj
           <a href="https://myaccount.google.com/apppasswords" target="_blank">App Password</a>.<br>
-          <b>Hotmail/Outlook:</b> host <code>smtp.office365.com</code>, port <code>587</code>, TLS ✓.<br>
-          <b>Privatemail:</b> host <code>smtp.privateemail.com</code>, port <code>587</code>, TLS ✓.
+          <b>Hotmail/Outlook:</b> SMTP <code>smtp.office365.com:587</code> / IMAP <code>outlook.office365.com:993</code>, TLS ✓.<br>
+          <b>Privatemail:</b> SMTP <code>smtp.privateemail.com:587</code> / IMAP <code>mail.privateemail.com:993</code>, TLS ✓.
+        </div>
+
+        <h3 style="margin: 20px 0 4px">IMAP — analiza skrzynki przychodzącej</h3>
+        <p class="muted">Wymagane do generowania raportu skrzynki mailowej.</p>
+
+        <div class="grid">
+          <label>
+            Serwer IMAP
+            <input formControlName="imap_host" placeholder="imap.gmail.com" />
+          </label>
+          <label>
+            Port IMAP
+            <input type="number" formControlName="imap_port" />
+          </label>
         </div>
 
         <div class="row">
@@ -96,6 +110,8 @@ export class SettingsComponent {
     username:  new FormControl('', [Validators.required, Validators.email]),
     password:  new FormControl(''),
     from_addr: new FormControl('', Validators.required),
+    imap_host: new FormControl(''),
+    imap_port: new FormControl(993),
   });
 
   constructor(private api: ApiService) {
