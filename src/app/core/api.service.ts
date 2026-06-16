@@ -15,7 +15,8 @@ export interface NewsletterDto { id: string; subject: string; created_at: string
 export interface NewsletterDetailDto { id: string; subject: string; html_body: string; text_body: string; created_at: string; pending_subscriber_count?: number; }
 export interface NewsletterSendResult { sent_count: number; }
 export interface JobStatusDto { status: 'queued'|'running'|'done'|'failed'; newsletterId?: string; progress?: number; error?: string; }
-export interface InboxReportDto { html: string; email_count: number; }
+export interface InboxJobDto { jobId: number; }
+export interface InboxJobStatusDto { status: 'queued'|'running'|'done'|'failed'; result_html?: string; email_count: number; error?: string; }
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -92,12 +93,15 @@ export class ApiService {
   }
 
   // Reports
-  generateInboxReport(email: string, daysBack = 90, maxEmails = 40) {
-    return this.http.post<InboxReportDto>(
+  startInboxReport(daysBack = 90, maxEmails = 40) {
+    return this.http.post<InboxJobDto>(
       `${this.base}/reports/inbox`,
-      { email, days_back: daysBack, max_emails: maxEmails },
+      { days_back: daysBack, max_emails: maxEmails },
       { withCredentials: true },
     );
+  }
+  getInboxReport(jobId: number) {
+    return this.http.get<InboxJobStatusDto>(`${this.base}/reports/inbox/${jobId}`, { withCredentials: true });
   }
 
   // Jobs

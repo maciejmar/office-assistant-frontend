@@ -92,15 +92,20 @@ class SmtpConfigOut(BaseModel):
     configured: bool = True
 
 
-class InboxReportIn(BaseModel):
-    email: str
+class InboxJobCreate(BaseModel):
     days_back: int = 90
     max_emails: int = 40
 
 
-class InboxReportOut(BaseModel):
-    html: str
-    email_count: int
+class InboxJobCreateOut(BaseModel):
+    jobId: int
+
+
+class InboxJobStatusOut(BaseModel):
+    status: str
+    result_html: Optional[str] = None
+    email_count: int = 0
+    error: Optional[str] = None
 
 
 class JobCreate(BaseModel):

@@ -65,6 +65,20 @@ class SendLog(Base):
     sent_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class InboxReportJob(Base):
+    __tablename__ = "inbox_report_jobs"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
+    status: Mapped[str] = mapped_column(String(32), default="queued")
+    days_back: Mapped[int] = mapped_column(Integer, default=90)
+    max_emails: Mapped[int] = mapped_column(Integer, default=40)
+    result_html: Mapped[str | None] = mapped_column(Text, nullable=True)
+    email_count: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
 class UserSmtpConfig(Base):
     __tablename__ = "user_smtp_configs"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
