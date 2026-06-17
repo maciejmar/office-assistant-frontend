@@ -6,10 +6,76 @@ import httpx
 
 from ..config import settings
 from ..db import SessionLocal
-from ..imap_reader import fetch_financial_emails
+from ..imap_reader import fetch_financial_emails, EmailSummary
 from ..models import InboxReportJob, UserSmtpConfig
 
 logger = logging.getLogger(__name__)
+
+CHUNK_SIZE = 15  # emails per LLM extraction pass
+
+
+def _llm(prompt: str) -> str:
+    with httpx.Client(timeout=300) as client:
+        resp = client.post(
+            f"{settings.ollama_url}/api/generate",
+            json={
+                "model": settings.ollama_model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {"num_predict": 1500},
+            },
+        )
+        resp.raise_for_status()
+        return resp.json().get("response", "").strip()
+
+
+def _strip_fences(text: str) -> str:
+    text = re.sub(r"^```[a-zA-Z]*\n?", "", text.strip())
+    return re.sub(r"\n?```$", "", text.strip()).strip()
+
+
+def _extract_facts(chunk: list[EmailSummary], chunk_no: int, total_chunks: int) -> str:
+    """Pass 1: extract structured financial facts from a batch of emails."""
+    emails_text = "\n\n".join(
+        f"[{i+1}] Data: {e.date} | Od: {e.sender} | Temat: {e.subject}\nTreść: {e.snippet}"
+        for i, e in enumerate(chunk)
+    )
+    prompt = f"""Z poniższych {len(chunk)} e-maili finansowych wyciągnij TYLKO kluczowe fakty finansowe.
+
+E-MAILE (partia {chunk_no}/{total_chunks}):
+{emails_text}
+
+Dla każdego e-maila podaj w jednej linii:
+DATA | NADAWCA/FIRMA | KWOTA (jeśli jest) | TYP (faktura/przelew/składka/podatek/rachunek/inne) | KRÓTKA NOTATKA
+
+Jeśli nie ma kwoty napisz "-". Pisz po polsku. Tylko lista faktów, bez komentarzy."""
+
+    return _llm(prompt)
+
+
+def _generate_report(facts_combined: str, total: int, days_back: int) -> str:
+    """Pass 2: generate HTML report from extracted facts."""
+    prompt = f"""Jesteś asystentem finansowym. Na podstawie poniższych danych finansowych z {total} e-maili (ostatnie {days_back} dni) stwórz raport HTML.
+
+WYCIĄGNIĘTE DANE FINANSOWE:
+{facts_combined}
+
+Stwórz raport HTML zawierający:
+1. <h2>Podsumowanie</h2> — liczba transakcji, ogólny obraz
+2. <h2>Płatności i przelewy</h2> — lista z datami i kwotami
+3. <h2>Faktury i rachunki</h2> — jeśli występują
+4. <h2>Składki i podatki</h2> — ZUS, US, VAT, PIT jeśli występują
+5. <h2>Uwagi</h2> — zaległości lub ważne pozycje
+
+ZASADY:
+- Używaj WYŁĄCZNIE podanych danych
+- NIE WYMYŚLAJ kwot ani nazw których nie ma w danych
+- Tylko fragment HTML: <h2>, <h3>, <p>, <ul>, <li>, <strong>, <table>, <tr>, <td>, <th>
+- Pisz po polsku
+- Maksymalnie 700 słów"""
+
+    raw = _llm(prompt)
+    return _strip_fences(raw)
 
 
 def run_inbox_report(
@@ -30,7 +96,6 @@ def run_inbox_report(
         job.status = "running"
         db.commit()
 
-        # use provided credentials or fall back to stored config
         if not imap_host or not username or not password:
             cfg = db.query(UserSmtpConfig).filter(UserSmtpConfig.user_id == user_id).first()
             if not cfg or not cfg.imap_host:
@@ -68,59 +133,41 @@ def run_inbox_report(
             db.commit()
             return
 
-        MAX_TOTAL_CHARS = 10_000
-        emails_text_parts = []
-        total = 0
-        for i, e in enumerate(emails):
-            part = f"--- [{i+1}] ---\nData: {e.date}\nOd: {e.sender}\nTemat: {e.subject}\nTreść:\n{e.snippet}"
-            if total + len(part) > MAX_TOTAL_CHARS:
-                break
-            emails_text_parts.append(part)
-            total += len(part)
-        emails_text = "\n\n".join(emails_text_parts)
-        included = len(emails_text_parts)
-
-        prompt = f"""Jesteś asystentem finansowym. Przeanalizuj poniższe wiadomości e-mail z skrzynki użytkownika i przygotuj czytelny raport finansowy.
-
-WIADOMOŚCI E-MAIL ({included} z {len(emails)} szt., ostatnie {days_back} dni):
-{emails_text}
-
-ZADANIE:
-Stwórz przejrzysty raport HTML zawierający:
-1. Podsumowanie — ile wiadomości finansowych, ogólny obraz sytuacji
-2. Płatności i przelewy — lista z datami, kwotami (jeśli widoczne), nadawcą/odbiorcą
-3. Faktury i rachunki — lista wystawionych lub otrzymanych
-4. Składki i podatki (ZUS, US, VAT, PIT) — osobna sekcja jeśli występują
-5. Uwagi — nieodebrane, zaległe lub ważne nadchodzące płatności
-
-ZASADY:
-- Używaj WYŁĄCZNIE informacji z dostarczonych e-maili
-- NIE WYMYŚLAJ kwot, dat ani nazw których nie ma w treści
-- Jeśli czegoś nie możesz ustalić, napisz "brak danych"
-- Odpowiedz tylko fragmentem HTML (bez <html>/<head>/<body>) używając: <h2>, <h3>, <p>, <ul>, <li>, <table>, <strong>
-- Pisz po polsku"""
-
+        # Pass 1: extract facts in chunks
+        chunks = [emails[i:i+CHUNK_SIZE] for i in range(0, len(emails), CHUNK_SIZE)]
+        facts_parts = []
         try:
-            with httpx.Client(timeout=300) as client:
-                resp = client.post(
-                    f"{settings.ollama_url}/api/generate",
-                    json={"model": settings.ollama_model, "prompt": prompt, "stream": False, "options": {"num_predict": 3000}},
-                )
-                resp.raise_for_status()
-                raw = resp.json().get("response", "")
+            for idx, chunk in enumerate(chunks, 1):
+                facts = _extract_facts(chunk, idx, len(chunks))
+                if facts:
+                    facts_parts.append(f"--- Partia {idx} ---\n{facts}")
         except Exception as e:
             job.status = "failed"
-            job.error = f"Błąd LLM: {e}"
+            job.error = f"Błąd ekstrakcji danych (LLM): {e}"
             job.finished_at = datetime.utcnow()
             db.commit()
             return
 
-        html = re.sub(r"^```[a-zA-Z]*\n?", "", raw.strip())
-        html = re.sub(r"\n?```$", "", html.strip()).strip()
+        if not facts_parts:
+            job.status = "failed"
+            job.error = "Model LLM nie wyekstrahował żadnych danych. Spróbuj ponownie."
+            job.finished_at = datetime.utcnow()
+            db.commit()
+            return
+
+        # Pass 2: generate final HTML report
+        try:
+            html = _generate_report("\n\n".join(facts_parts), len(emails), days_back)
+        except Exception as e:
+            job.status = "failed"
+            job.error = f"Błąd generowania raportu (LLM): {e}"
+            job.finished_at = datetime.utcnow()
+            db.commit()
+            return
 
         if not html:
             job.status = "failed"
-            job.error = "Model LLM zwrócił pustą odpowiedź. Spróbuj zmniejszyć zakres dni lub liczbę e-maili."
+            job.error = "Model LLM zwrócił pusty raport. Spróbuj ponownie."
             job.finished_at = datetime.utcnow()
             db.commit()
             return
