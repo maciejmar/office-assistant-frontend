@@ -9,13 +9,20 @@ from email.utils import parsedate_to_datetime
 
 logger = logging.getLogger(__name__)
 
-FINANCIAL_KEYWORDS = [
-    "faktura", "invoice", "płatność", "payment", "przelew", "transfer",
-    "rachunek", "bill", "podatek", "tax", "zus", "składka", "contribution",
-    "należność", "zobowiązanie", "opłata", "fee", "rata", "installment",
-    "zwrot", "refund", "korekta", "correction", "vat", "pit", "cit",
-    "wynagrodzenie", "salary", "wyciąg", "statement", "saldo", "balance",
-    "potwierdzenie", "confirmation", "us ", "urząd skarbowy",
+AMOUNT_PATTERN = re.compile(
+    r"\d[\d\s]*[.,]\d{2}\s*(?:zł|pln|eur|usd|gbp|euro|złotych)?",
+    re.IGNORECASE,
+)
+
+PAYMENT_KEYWORDS = [
+    "do zapłaty", "termin płatności", "termin zapłaty", "proszę o wpłatę",
+    "należność", "kwota do zapłaty", "należy zapłacić", "zapłać",
+    "pay by", "payment due", "amount due", "due date", "please pay",
+    "faktura", "invoice", "rachunek", "bill",
+    "rata", "składka", "podatek", "tax", "zus", "vat", "pit", "cit",
+    "opłata", "fee", "subskrypcja", "subscription", "abonament",
+    "przelew", "transfer", "wpłata", "deposit",
+    "upomnienie", "wezwanie do zapłaty", "zaległość", "overdue", "reminder",
 ]
 
 
@@ -63,8 +70,10 @@ def _extract_text(msg: email.message.Message) -> str:
 
 
 def _is_financial(subject: str, body: str) -> bool:
-    combined = (subject + " " + body[:500]).lower()
-    return any(kw in combined for kw in FINANCIAL_KEYWORDS)
+    combined = (subject + " " + body[:600]).lower()
+    has_amount = bool(AMOUNT_PATTERN.search(combined))
+    has_keyword = any(kw in combined for kw in PAYMENT_KEYWORDS)
+    return has_amount or has_keyword
 
 
 def fetch_financial_emails(
