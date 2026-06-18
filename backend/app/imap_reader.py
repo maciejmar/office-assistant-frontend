@@ -93,8 +93,8 @@ def fetch_financial_emails(
         _, ids = imap.search(None, f'(SINCE "{since_date}")')
         all_ids = ids[0].split() if ids[0] else []
 
-        # newest first, limit to 200 to search through
-        all_ids = list(reversed(all_ids[-200:]))
+        # newest first, limit to 500 to search through
+        all_ids = list(reversed(all_ids[-500:]))
 
         results: list[EmailSummary] = []
         for uid in all_ids:

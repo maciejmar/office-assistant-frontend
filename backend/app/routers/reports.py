@@ -33,7 +33,7 @@ def start_inbox_report(
         job_id=job.id,
         user_id=user.id,
         days_back=payload.days_back,
-        max_emails=min(payload.max_emails, 60),
+        max_emails=min(payload.max_emails, 150),
         imap_host=payload.imap_host or None,
         imap_port=payload.imap_port,
         username=payload.username or None,
