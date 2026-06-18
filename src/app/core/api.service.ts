@@ -110,6 +110,9 @@ export class ApiService {
   getInboxReport(jobId: number) {
     return this.http.get<InboxJobStatusDto>(`${this.base}/reports/inbox/${jobId}`, { withCredentials: true });
   }
+  cancelInboxReport(jobId: number) {
+    return this.http.delete(`${this.base}/reports/inbox/${jobId}`, { withCredentials: true });
+  }
 
   // Jobs
   createJob(payload: { fileIds: string[]; subscriberEmails: string[]; language: string; tone: string; maxLength: number; customPrompt?: string; }) {

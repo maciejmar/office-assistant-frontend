@@ -66,6 +66,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
         <div class="spinner"></div>
         <span>Analizuję skrzynkę i generuję raport…</span>
         <span class="elapsed">{{ elapsed }}</span>
+        <button class="cancel-btn" (click)="cancel()">Anuluj</button>
       </div>
 
       <div class="error" *ngIf="error">{{ error }}</div>
@@ -95,6 +96,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
     .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--primary, #58f2c4); animation: spin 0.8s linear infinite; flex-shrink: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .elapsed { font-size: 0.8rem; }
+    .cancel-btn { padding: 4px 12px; font-size: 0.8rem; border-radius: 6px; background: rgba(255,100,100,0.15); border-color: rgba(255,100,100,0.4); color: var(--danger, #ff6b6b); margin-left: 8px; }
     .report-panel { margin-top: 28px; border: 1px solid var(--border); border-radius: 12px; padding: 24px; max-width: 860px; }
     .report-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 0.88rem; color: var(--muted, #888); }
     .print-btn { padding: 6px 14px; font-size: 0.82rem; border-radius: 8px; }
@@ -186,6 +188,14 @@ export class InboxReportComponent implements OnDestroy {
   private stopTimers() {
     clearInterval(this.pollTimer);
     clearInterval(this.clockTimer);
+  }
+
+  cancel() {
+    if (!this.currentJobId) { this.loading = false; this.stopTimers(); return; }
+    this.api.cancelInboxReport(this.currentJobId).subscribe({
+      next: () => { this.error = 'Anulowano.'; this.loading = false; this.stopTimers(); },
+      error: () => { this.loading = false; this.stopTimers(); },
+    });
   }
 
   print() { window.print(); }

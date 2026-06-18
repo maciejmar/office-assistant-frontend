@@ -43,6 +43,26 @@ def start_inbox_report(
     return InboxJobCreateOut(jobId=job.id)
 
 
+@router.delete("/inbox/{job_id}")
+def cancel_inbox_report(
+    job_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    job = db.query(InboxReportJob).filter(
+        InboxReportJob.id == job_id,
+        InboxReportJob.user_id == user.id,
+    ).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status in ("queued", "running"):
+        job.status = "failed"
+        job.error = "Anulowano przez użytkownika"
+        job.finished_at = datetime.utcnow()
+        db.commit()
+    return {"ok": True}
+
+
 @router.get("/inbox/{job_id}", response_model=InboxJobStatusOut)
 def get_inbox_report(
     job_id: int,

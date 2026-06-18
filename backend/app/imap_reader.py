@@ -86,7 +86,7 @@ def fetch_financial_emails(
 ) -> list[EmailSummary]:
     since_date = (datetime.utcnow() - timedelta(days=days_back)).strftime("%d-%b-%Y")
 
-    with imaplib.IMAP4_SSL(imap_host, imap_port) as imap:
+    with imaplib.IMAP4_SSL(imap_host, imap_port, timeout=30) as imap:
         imap.login(username, password.replace(" ", ""))
         imap.select("INBOX")
 
