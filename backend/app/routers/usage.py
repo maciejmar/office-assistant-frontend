@@ -1,13 +1,11 @@
-from datetime import datetime, date
+from datetime import datetime
 from typing import List
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ..db import get_db
+from ..deps import get_db, get_current_user
 from ..models import UsageLog
-from ..routers.auth import get_current_user
 from ..schemas import UsageSummaryOut, UsageHistoryItemOut
 
 router = APIRouter(prefix="/usage", tags=["usage"])
