@@ -2,11 +2,9 @@ import logging
 import re
 from datetime import datetime
 
-import httpx
-
-from ..config import settings
 from ..db import SessionLocal
 from ..imap_reader import fetch_financial_emails, EmailSummary
+from ..llm import call_llm
 from ..models import InboxReportJob, UserSmtpConfig
 
 logger = logging.getLogger(__name__)
@@ -14,19 +12,8 @@ logger = logging.getLogger(__name__)
 CHUNK_SIZE = 15  # emails per LLM extraction pass
 
 
-def _llm(prompt: str) -> str:
-    with httpx.Client(timeout=300) as client:
-        resp = client.post(
-            f"{settings.ollama_url}/api/generate",
-            json={
-                "model": settings.ollama_model,
-                "prompt": prompt,
-                "stream": False,
-                "options": {"num_predict": 1500},
-            },
-        )
-        resp.raise_for_status()
-        return resp.json().get("response", "").strip()
+def _llm(prompt: str, user_id: int, operation: str) -> str:
+    return call_llm(prompt, user_id=user_id, operation=operation, max_tokens=1500)
 
 
 def _strip_fences(text: str) -> str:
@@ -34,7 +21,7 @@ def _strip_fences(text: str) -> str:
     return re.sub(r"\n?```$", "", text.strip()).strip()
 
 
-def _extract_facts(chunk: list[EmailSummary], chunk_no: int, total_chunks: int) -> str:
+def _extract_facts(chunk: list[EmailSummary], chunk_no: int, total_chunks: int, user_id: int) -> str:
     """Pass 1: extract structured financial facts from a batch of emails."""
     emails_text = "\n\n".join(
         f"[{i+1}] Data: {e.date} | Od: {e.sender} | Temat: {e.subject}\nTreść: {e.snippet}"
@@ -50,10 +37,10 @@ DATA | NADAWCA/FIRMA | KWOTA (jeśli jest) | TYP (faktura/przelew/składka/podat
 
 Jeśli nie ma kwoty napisz "-". Pisz po polsku. Tylko lista faktów, bez komentarzy."""
 
-    return _llm(prompt)
+    return _llm(prompt, user_id=user_id, operation="inbox_extract")
 
 
-def _generate_report(facts_combined: str, total: int, days_back: int) -> str:
+def _generate_report(facts_combined: str, total: int, days_back: int, user_id: int) -> str:
     """Pass 2: generate HTML report from extracted facts."""
     prompt = f"""Jesteś asystentem finansowym. Na podstawie poniższych danych finansowych z {total} e-maili (ostatnie {days_back} dni) stwórz raport HTML.
 
@@ -74,7 +61,7 @@ ZASADY:
 - Pisz po polsku
 - Maksymalnie 700 słów"""
 
-    raw = _llm(prompt)
+    raw = _llm(prompt, user_id=user_id, operation="inbox_report")
     return _strip_fences(raw)
 
 
@@ -138,7 +125,7 @@ def run_inbox_report(
         facts_parts = []
         try:
             for idx, chunk in enumerate(chunks, 1):
-                facts = _extract_facts(chunk, idx, len(chunks))
+                facts = _extract_facts(chunk, idx, len(chunks), user_id=user_id)
                 if facts:
                     facts_parts.append(f"--- Partia {idx} ---\n{facts}")
         except Exception as e:
@@ -157,7 +144,7 @@ def run_inbox_report(
 
         # Pass 2: generate final HTML report
         try:
-            html = _generate_report("\n\n".join(facts_parts), len(emails), days_back)
+            html = _generate_report("\n\n".join(facts_parts), len(emails), days_back, user_id=user_id)
         except Exception as e:
             job.status = "failed"
             job.error = f"Błąd generowania raportu (LLM): {e}"

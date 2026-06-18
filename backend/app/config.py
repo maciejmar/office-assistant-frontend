@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     storage_dir: str = "./storage"
     ollama_url: str = "http://ollama:11434"
     ollama_model: str = "gemma3:latest"
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
     smtp_host: str = "mailpit"
     smtp_port: int = 1025
     smtp_from: str = "newsletter@office-assistant.local"

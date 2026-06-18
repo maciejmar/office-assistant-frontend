@@ -3,11 +3,10 @@ import re
 import logging
 from datetime import datetime
 
-import httpx
 from pypdf import PdfReader
 
-from ..config import settings
 from ..db import SessionLocal
+from ..llm import call_llm
 from ..models import File, Newsletter, NewsletterJob, SendLog, UserSmtpConfig
 from ..smtp import send_email, SmtpCreds
 from ..storage import load_file
@@ -154,14 +153,7 @@ Odpowiedz WYŁĄCZNIE w poniższym formacie, używając dokładnie tych markeró
 (ta sama treść w wersji plain text, bez tagów HTML)"""
 
     try:
-        with httpx.Client(timeout=300) as client:
-            resp = client.post(
-                f"{settings.ollama_url}/api/generate",
-                json={"model": settings.ollama_model, "prompt": prompt, "stream": False},
-            )
-            resp.raise_for_status()
-            raw = resp.json().get("response", "")
-
+        raw = call_llm(prompt, user_id=state["user_id"], operation="newsletter", max_tokens=2000)
         subject, html_body, text_body = _parse_llm_output(raw)
         return {**state, "subject": subject, "html_body": html_body, "text_body": text_body, "error": None}
 

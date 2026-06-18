@@ -65,6 +65,18 @@ class SendLog(Base):
     sent_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class UsageLog(Base):
+    __tablename__ = "usage_logs"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
+    operation: Mapped[str] = mapped_column(String(32))  # newsletter / inbox_report
+    model: Mapped[str] = mapped_column(String(64))
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    cost_usd: Mapped[float] = mapped_column(default=0.0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class InboxReportJob(Base):
     __tablename__ = "inbox_report_jobs"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

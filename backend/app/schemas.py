@@ -112,6 +112,23 @@ class InboxJobStatusOut(BaseModel):
     error: Optional[str] = None
 
 
+class UsageSummaryOut(BaseModel):
+    total_cost_usd: float
+    month_cost_usd: float
+    total_calls: int
+    by_operation: dict
+
+
+class UsageHistoryItemOut(BaseModel):
+    id: int
+    operation: str
+    model: str
+    input_tokens: int
+    output_tokens: int
+    cost_usd: float
+    created_at: str
+
+
 class JobCreate(BaseModel):
     fileIds: List[int]
     subscriberEmails: List[EmailStr]

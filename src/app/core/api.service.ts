@@ -17,6 +17,8 @@ export interface NewsletterSendResult { sent_count: number; }
 export interface JobStatusDto { status: 'queued'|'running'|'done'|'failed'; newsletterId?: string; progress?: number; error?: string; }
 export interface InboxJobDto { jobId: number; }
 export interface InboxJobStatusDto { status: 'queued'|'running'|'done'|'failed'; result_html?: string; email_count: number; error?: string; }
+export interface UsageSummaryDto { total_cost_usd: number; month_cost_usd: number; total_calls: number; by_operation: Record<string, number>; }
+export interface UsageHistoryItemDto { id: number; operation: string; model: string; input_tokens: number; output_tokens: number; cost_usd: number; created_at: string; }
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -112,6 +114,14 @@ export class ApiService {
   }
   cancelInboxReport(jobId: number) {
     return this.http.delete(`${this.base}/reports/inbox/${jobId}`, { withCredentials: true });
+  }
+
+  // Usage / costs
+  getUsageSummary() {
+    return this.http.get<UsageSummaryDto>(`${this.base}/usage/summary`, { withCredentials: true });
+  }
+  getUsageHistory(limit = 50) {
+    return this.http.get<UsageHistoryItemDto[]>(`${this.base}/usage/history?limit=${limit}`, { withCredentials: true });
   }
 
   // Jobs
