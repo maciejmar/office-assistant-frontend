@@ -50,14 +50,14 @@ def write_monthly_report(
 
     month_name = POLISH_MONTHS[month or datetime.utcnow().month]
 
-    try:
+    existing_titles = [w.title for w in sh.worksheets()]
+    if month_name in existing_titles:
         ws = sh.worksheet(month_name)
-    except gspread.WorksheetNotFound:
+    else:
         ws = sh.add_worksheet(title=month_name, rows=500, cols=10)
-        ws.append_row(HEADER, value_input_option="USER_ENTERED")
         logger.info("Created new sheet tab '%s'", month_name)
 
-    # Ensure header if sheet was empty
+    # Ensure header
     existing = ws.get_all_values()
     if not existing:
         ws.append_row(HEADER, value_input_option="USER_ENTERED")
