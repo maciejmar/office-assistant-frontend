@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     ollama_model: str = "gemma3:latest"
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+    google_service_account_file: str = ""
+    google_sheets_id: str = "1HPfXS3DYnIY-IBeRTttD1dURTU0syTIlGlGAHBp-cR8"
     smtp_host: str = "mailpit"
     smtp_port: int = 1025
     smtp_from: str = "newsletter@office-assistant.local"

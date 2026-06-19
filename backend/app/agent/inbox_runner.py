@@ -2,7 +2,9 @@ import logging
 import re
 from datetime import datetime
 
+from ..config import settings
 from ..db import SessionLocal
+from ..google_sheets import write_monthly_report
 from ..imap_reader import fetch_financial_emails, EmailSummary
 from ..llm import call_llm
 from ..models import InboxReportJob, UserSmtpConfig
@@ -164,6 +166,17 @@ def run_inbox_report(
         job.email_count = len(emails)
         job.finished_at = datetime.utcnow()
         db.commit()
+
+        if settings.google_service_account_file and settings.google_sheets_id:
+            try:
+                rows_written = write_monthly_report(
+                    spreadsheet_id=settings.google_sheets_id,
+                    service_account_file=settings.google_service_account_file,
+                    facts_combined="\n\n".join(facts_parts),
+                )
+                logger.info("Google Sheets: wrote %d rows", rows_written)
+            except Exception as e:
+                logger.warning("Google Sheets write failed (non-fatal): %s", e)
 
     except Exception as e:
         logger.exception("inbox_runner unexpected error job_id=%s: %s", job_id, e)
