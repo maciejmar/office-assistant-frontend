@@ -23,6 +23,14 @@ PAYMENT_KEYWORDS = [
     "opłata", "fee", "subskrypcja", "subscription", "abonament",
     "przelew", "transfer", "wpłata", "deposit",
     "upomnienie", "wezwanie do zapłaty", "zaległość", "overdue", "reminder",
+    # bank statements
+    "wyciąg", "wyciag", "wyciąg bankowy", "wyciąg okresowy", "wyciąg z rachunku",
+    "historia rachunku", "historia transakcji", "zestawienie transakcji",
+    "saldo", "bank statement", "account statement", "e-statement",
+    "monthly statement", "transaction history",
+    # credit / debit notifications
+    "uznanie rachunku", "obciążenie rachunku", "operacja na rachunku",
+    "transakcja kartą", "płatność kartą", "autoryzacja",
 ]
 
 
@@ -70,7 +78,8 @@ def _extract_text(msg: email.message.Message) -> str:
 
 
 def _is_financial(subject: str, body: str) -> bool:
-    combined = (subject + " " + body[:600]).lower()
+    # subject gets checked twice to weight it more — many bank emails have sparse bodies
+    combined = (subject + " " + subject + " " + body[:800]).lower()
     has_amount = bool(AMOUNT_PATTERN.search(combined))
     has_keyword = any(kw in combined for kw in PAYMENT_KEYWORDS)
     return has_amount or has_keyword
