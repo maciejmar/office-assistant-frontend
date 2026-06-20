@@ -9,28 +9,32 @@ from email.utils import parsedate_to_datetime
 
 logger = logging.getLogger(__name__)
 
+# Requires a currency marker (before or after the number) — plain decimals like
+# dates ("08.06") must NOT match, otherwise nearly every email passes the filter.
 AMOUNT_PATTERN = re.compile(
-    r"\d[\d\s]*[.,]\d{2}\s*(?:zł|pln|eur|usd|gbp|euro|złotych)?",
-    re.IGNORECASE,
+    r"[$€£]\s?\d[\d\s]*[.,]\d{2}"
+    r"|\d[\d\s]*[.,]\d{2}\s*(?:zł|PLN|EUR|USD|GBP|euro|złotych|\$|€|£)",
 )
 
 PAYMENT_KEYWORDS = [
     "do zapłaty", "termin płatności", "termin zapłaty", "proszę o wpłatę",
-    "należność", "kwota do zapłaty", "należy zapłacić", "zapłać",
-    "pay by", "payment due", "amount due", "due date", "please pay",
-    "faktura", "invoice", "rachunek", "bill",
-    "rata", "składka", "podatek", "tax", "zus", "vat", "pit", "cit",
-    "opłata", "fee", "subskrypcja", "subscription", "abonament",
-    "przelew", "transfer", "wpłata", "deposit",
-    "upomnienie", "wezwanie do zapłaty", "zaległość", "overdue", "reminder",
-    # bank statements
-    "wyciąg", "wyciag", "wyciąg bankowy", "wyciąg okresowy", "wyciąg z rachunku",
-    "historia rachunku", "historia transakcji", "zestawienie transakcji",
-    "saldo", "bank statement", "account statement", "e-statement",
-    "monthly statement", "transaction history",
-    # credit / debit notifications
-    "uznanie rachunku", "obciążenie rachunku", "operacja na rachunku",
-    "transakcja kartą", "płatność kartą", "autoryzacja",
+    "należność", "kwota do zapłaty", "należy zapłacić",
+    "pay by", "payment due", "amount due", "please pay",
+    "faktura", "invoice", "rachunek do zapłaty", "rachunek za",
+    "rata kredytu", "składka", "deklaracja vat", "rozliczenie pit",
+    "przypomnienie o płatności", "opłata za", "abonament",
+    "potwierdzenie płatności", "potwierdzenie przelewu", "potwierdzenie wpłaty",
+    "upomnienie", "wezwanie do zapłaty", "zaległość", "overdue",
+    "wyciąg bankowy", "wyciąg okresowy", "wyciąg z rachunku",
+    "historia transakcji", "zestawienie transakcji",
+    "bank statement", "account statement", "e-statement",
+    "transakcja kartą", "płatność kartą",
+]
+
+# Word-boundary matching so short tokens (e.g. "vat") don't match inside
+# unrelated words (e.g. "avatar").
+_KEYWORD_PATTERNS = [
+    re.compile(r"\b" + re.escape(kw) + r"\b", re.IGNORECASE) for kw in PAYMENT_KEYWORDS
 ]
 
 
@@ -79,9 +83,9 @@ def _extract_text(msg: email.message.Message) -> str:
 
 def _is_financial(subject: str, body: str) -> bool:
     # subject gets checked twice to weight it more — many bank emails have sparse bodies
-    combined = (subject + " " + subject + " " + body[:800]).lower()
+    combined = subject + " " + subject + " " + body[:800]
     has_amount = bool(AMOUNT_PATTERN.search(combined))
-    has_keyword = any(kw in combined for kw in PAYMENT_KEYWORDS)
+    has_keyword = any(p.search(combined) for p in _KEYWORD_PATTERNS)
     return has_amount or has_keyword
 
 
