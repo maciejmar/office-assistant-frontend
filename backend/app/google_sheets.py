@@ -51,6 +51,7 @@ def write_monthly_report(
     month_name = POLISH_MONTHS[month or datetime.utcnow().month]
 
     existing_titles = [w.title for w in sh.worksheets()]
+    logger.info("Google Sheets tabs found: %r, looking for: %r", existing_titles, month_name)
     if month_name in existing_titles:
         ws = sh.worksheet(month_name)
     else:
