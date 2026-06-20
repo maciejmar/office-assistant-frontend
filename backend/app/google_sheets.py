@@ -5,9 +5,9 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 POLISH_MONTHS = {
-    1: "Styczeń", 2: "Luty", 3: "Marzec", 4: "Kwiecień",
-    5: "Maj", 6: "Czerwiec", 7: "Lipiec", 8: "Sierpień",
-    9: "Wrzesień", 10: "Październik", 11: "Listopad", 12: "Grudzień",
+    1: "styczeń", 2: "luty", 3: "marzec", 4: "kwiecień",
+    5: "maj", 6: "czerwiec", 7: "lipiec", 8: "sierpień",
+    9: "wrzesień", 10: "październik", 11: "listopad", 12: "grudzień",
 }
 
 HEADER = ["Data", "Nadawca / Firma", "Kwota", "Typ", "Opis"]
@@ -51,7 +51,6 @@ def write_monthly_report(
     month_name = POLISH_MONTHS[month or datetime.utcnow().month]
 
     existing_titles = [w.title for w in sh.worksheets()]
-    logger.info("Google Sheets tabs found: %r, looking for: %r", existing_titles, month_name)
     if month_name in existing_titles:
         ws = sh.worksheet(month_name)
     else:
