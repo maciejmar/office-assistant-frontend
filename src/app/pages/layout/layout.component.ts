@@ -89,17 +89,27 @@ import { AuthService } from '../../core/auth.service';
     }
 
     .logout {
-      padding: 10px 14px;
-      border-radius: 10px;
-      color: var(--text);
-      background: linear-gradient(135deg, rgba(255, 107, 107, 0.25), rgba(255, 107, 107, 0.12));
-      border: 1px solid rgba(255, 107, 107, 0.45);
-      transition: transform 140ms ease, box-shadow 140ms ease;
+      padding: 11px 22px;
+      border-radius: 999px;
+      color: #fff;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      background: linear-gradient(135deg, #ff8a8a, #e6453f);
+      border: none;
+      box-shadow:
+        0 10px 22px rgba(8, 12, 24, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -10px 16px rgba(0, 0, 0, 0.12);
+      transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
     }
 
     .logout:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 24px rgba(255, 107, 107, 0.2);
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+      box-shadow:
+        0 14px 28px rgba(8, 12, 24, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -10px 16px rgba(0, 0, 0, 0.14);
     }
 
     .content {

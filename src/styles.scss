@@ -34,11 +34,8 @@ body {
   margin: 0;
   font-family: "Space Grotesk", "Segoe UI", sans-serif;
   color: var(--text);
-  background:
-    radial-gradient(900px 500px at 10% -10%, rgba(106, 167, 255, 0.22), transparent 60%),
-    radial-gradient(700px 420px at 90% -10%, rgba(248, 107, 210, 0.24), transparent 60%),
-    radial-gradient(900px 540px at 40% 120%, rgba(88, 242, 196, 0.16), transparent 60%),
-    linear-gradient(180deg, #0a0f1a 0%, #0c1222 40%, #0b0f1a 100%);
+  background: linear-gradient(to top left, #5b2a8f 0%, #221f4d 45%, #0b4f8c 100%);
+  background-attachment: fixed;
 }
 
 a {
@@ -93,17 +90,42 @@ textarea::placeholder {
 }
 
 button:not(.logout) {
-  background: var(--grad-main);
-  border: 1px solid rgba(88, 242, 196, 0.5);
-  color: var(--text);
-  padding: 10px 14px;
-  border-radius: 12px;
-  transition: transform 140ms ease, box-shadow 140ms ease;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 11px 22px;
+  border-radius: 999px;
+  box-shadow:
+    0 10px 22px rgba(8, 12, 24, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -10px 16px rgba(0, 0, 0, 0.12);
+  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
 }
 
 button:not(.logout):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(94, 228, 195, 0.2);
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+  box-shadow:
+    0 14px 28px rgba(8, 12, 24, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -10px 16px rgba(0, 0, 0, 0.14);
+}
+
+button:not(.logout):active {
+  transform: translateY(0);
+  filter: brightness(0.97);
+  box-shadow:
+    0 4px 10px rgba(8, 12, 24, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+button:not(.logout):disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
 }
 
 table {
