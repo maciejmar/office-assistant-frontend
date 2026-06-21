@@ -8,10 +8,10 @@
   --text: #e9ecf8;
   --muted: #a6b0d4;
   --primary: #58f2c4;
-  --accent: #6aa7ff;
+  --accent: #2475e7;
   --accent-2: #f86bd2;
   --accent-3: #ffd36a;
-  --danger: #ff6b6b;
+  --danger: #631d1d;
   --border: rgba(255, 255, 255, 0.08);
   --shadow: 0 20px 50px rgba(4, 7, 16, 0.45);
   --radius: 14px;
@@ -99,7 +99,7 @@ button:not(.logout) {
   border-radius: 999px;
   box-shadow:
     0 10px 22px rgba(8, 12, 24, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 1px 0 rgba(43, 6, 6, 0.205),
     inset 0 -10px 16px rgba(0, 0, 0, 0.12);
   transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
 }
