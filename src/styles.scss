@@ -9,7 +9,7 @@
   --muted: #a6b0d4;
   --primary: #58f2c4;
   --accent: #1a3fb0;
-  --accent-2: #5a0fae;
+  --accent-2: #43067f;
   --accent-3: #ffd36a;
   --danger: #631d1d;
   --border: rgba(255, 255, 255, 0.08);
@@ -90,7 +90,7 @@ textarea::placeholder {
 }
 
 button:not(.logout) {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: linear-gradient(45deg, var(--accent-2) 0%, var(--accent-2) 55%, var(--accent) 100%);
   border: none;
   color: #fff;
   font-weight: 600;
