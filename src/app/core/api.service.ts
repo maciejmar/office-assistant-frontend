@@ -19,6 +19,8 @@ export interface InboxJobDto { jobId: number; }
 export interface InboxJobStatusDto { status: 'queued'|'running'|'done'|'failed'; result_html?: string; email_count: number; error?: string; }
 export interface UsageSummaryDto { total_cost_usd: number; month_cost_usd: number; total_calls: number; by_operation: Record<string, number>; }
 export interface UsageHistoryItemDto { id: number; operation: string; model: string; input_tokens: number; output_tokens: number; cost_usd: number; created_at: string; }
+export interface UsageAdminUserDto { user_id: number; email: string; total_cost_usd: number; total_calls: number; }
+export interface MeDto { id: number; email: string; role: string; }
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -44,6 +46,9 @@ export class ApiService {
   }
   resetPassword(token: string, password: string) {
     return this.http.post(`${this.base}/auth/reset-password`, { token, password });
+  }
+  getMe() {
+    return this.http.get<MeDto>(`${this.base}/auth/me`, { withCredentials: true });
   }
 
   // Subscribers
@@ -128,6 +133,12 @@ export class ApiService {
   }
   getUsageHistory(limit = 50) {
     return this.http.get<UsageHistoryItemDto[]>(`${this.base}/usage/history?limit=${limit}`, { withCredentials: true });
+  }
+  getAdminUsersUsage() {
+    return this.http.get<UsageAdminUserDto[]>(`${this.base}/usage/admin/users`, { withCredentials: true });
+  }
+  getAdminUserHistory(userId: number, limit = 200) {
+    return this.http.get<UsageHistoryItemDto[]>(`${this.base}/usage/admin/users/${userId}/history?limit=${limit}`, { withCredentials: true });
   }
 
   // Jobs

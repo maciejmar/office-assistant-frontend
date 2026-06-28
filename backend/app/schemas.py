@@ -25,6 +25,12 @@ class ResetPasswordIn(BaseModel):
     password: str
 
 
+class MeOut(BaseModel):
+    id: int
+    email: EmailStr
+    role: str
+
+
 class SubscriberOut(BaseModel):
     id: int
     email: EmailStr
@@ -136,6 +142,13 @@ class UsageHistoryItemOut(BaseModel):
     output_tokens: int
     cost_usd: float
     created_at: str
+
+
+class UsageAdminUserOut(BaseModel):
+    user_id: int
+    email: str
+    total_cost_usd: float
+    total_calls: int
 
 
 class JobCreate(BaseModel):

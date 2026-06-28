@@ -1,19 +1,19 @@
 from datetime import datetime
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from ..deps import get_db, get_current_user
-from ..models import UsageLog
-from ..schemas import UsageSummaryOut, UsageHistoryItemOut
+from ..deps import get_db, get_current_admin
+from ..models import UsageLog, User
+from ..schemas import UsageSummaryOut, UsageHistoryItemOut, UsageAdminUserOut
 
 router = APIRouter(prefix="/usage", tags=["usage"])
 
 
 @router.get("/summary", response_model=UsageSummaryOut)
 def get_usage_summary(
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
     rows = db.query(UsageLog).filter(UsageLog.user_id == current_user.id).all()
@@ -42,7 +42,7 @@ def get_usage_summary(
 @router.get("/history", response_model=List[UsageHistoryItemOut])
 def get_usage_history(
     limit: int = 50,
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
     rows = (
@@ -52,6 +52,56 @@ def get_usage_history(
         .limit(limit)
         .all()
     )
+    return _to_history_out(rows)
+
+
+@router.get("/admin/users", response_model=List[UsageAdminUserOut])
+def get_admin_users_usage(
+    _admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    users = db.query(User).order_by(User.email).all()
+    rows = db.query(UsageLog).all()
+
+    totals: dict[int, dict] = {}
+    for r in rows:
+        t = totals.setdefault(r.user_id, {"cost": 0.0, "calls": 0})
+        t["cost"] += r.cost_usd
+        t["calls"] += 1
+
+    return [
+        UsageAdminUserOut(
+            user_id=u.id,
+            email=u.email,
+            total_cost_usd=round(totals.get(u.id, {}).get("cost", 0.0), 6),
+            total_calls=totals.get(u.id, {}).get("calls", 0),
+        )
+        for u in users
+    ]
+
+
+@router.get("/admin/users/{user_id}/history", response_model=List[UsageHistoryItemOut])
+def get_admin_user_history(
+    user_id: int,
+    limit: int = 200,
+    _admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    rows = (
+        db.query(UsageLog)
+        .filter(UsageLog.user_id == user_id)
+        .order_by(UsageLog.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return _to_history_out(rows)
+
+
+def _to_history_out(rows: list[UsageLog]) -> List[UsageHistoryItemOut]:
     return [
         UsageHistoryItemOut(
             id=r.id,

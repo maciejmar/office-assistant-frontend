@@ -10,6 +10,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     refresh_token_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    role: Mapped[str] = mapped_column(String(32), default="user")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 

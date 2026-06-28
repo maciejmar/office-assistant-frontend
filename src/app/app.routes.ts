@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
+import { adminGuard } from './core/admin.guard';
 
 import { LoginComponent } from './pages/auth/login.component';
 import { RegisterComponent } from './pages/auth/register.component';
@@ -38,7 +39,7 @@ export const routes: Routes = [
       { path: 'jobs/:jobId', component: JobStatusComponent },
       { path: 'settings', component: SettingsComponent },
       { path: 'inbox-report', component: InboxReportComponent },
-      { path: 'usage', component: UsageComponent },
+      { path: 'usage', component: UsageComponent, canActivate: [adminGuard] },
     ],
   },
 

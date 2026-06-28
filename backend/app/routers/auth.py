@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Response, Cookie
 from sqlalchemy.orm import Session
 from ..config import settings
-from ..deps import get_db
+from ..deps import get_db, get_current_user
 from ..models import User, PasswordResetToken
-from ..schemas import AuthRegister, AuthLogin, AuthToken, ForgotPasswordIn, ResetPasswordIn
+from ..schemas import AuthRegister, AuthLogin, AuthToken, ForgotPasswordIn, ResetPasswordIn, MeOut
 from ..auth import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
 from ..smtp import send_email
 
@@ -42,6 +42,11 @@ def login(payload: AuthLogin, response: Response, db: Session = Depends(get_db))
         path="/",
     )
     return {"accessToken": access}
+
+
+@router.get("/me", response_model=MeOut)
+def me(current_user: User = Depends(get_current_user)):
+    return MeOut(id=current_user.id, email=current_user.email, role=current_user.role)
 
 
 @router.post("/forgot-password")

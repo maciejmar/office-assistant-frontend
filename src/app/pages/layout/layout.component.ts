@@ -16,7 +16,7 @@ import { AuthService } from '../../core/auth.service';
           <a routerLink="/app/create" routerLinkActive="active">Create</a>
           <a routerLink="/app/newsletters" routerLinkActive="active">Newsletters</a>
           <a routerLink="/app/inbox-report" routerLinkActive="active">Inbox Report</a>
-          <a routerLink="/app/usage" routerLinkActive="active">Koszty AI</a>
+          <a *ngIf="(auth.user$ | async)?.role === 'admin'" routerLink="/app/usage" routerLinkActive="active">Koszty AI</a>
           <a routerLink="/app/settings" routerLinkActive="active">Settings</a>
         </nav>
         <button class="logout" (click)="logout()">Logout</button>
@@ -143,7 +143,7 @@ import { AuthService } from '../../core/auth.service';
   `]
 })
 export class LayoutComponent {
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(public auth: AuthService, private router: Router) {}
 
   logout() {
     this.auth.logout().subscribe({

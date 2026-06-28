@@ -25,6 +25,13 @@ def _run_migrations() -> None:
             conn.execute(text("ALTER TABLE user_smtp_configs ADD COLUMN imap_port INTEGER DEFAULT 993"))
         conn.commit()
 
+    user_cols = {c["name"] for c in inspector.get_columns("users")}
+    with engine.connect() as conn:
+        if "role" not in user_cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(32) DEFAULT 'user'"))
+        conn.execute(text("UPDATE users SET role = 'admin' WHERE email = 'memgos@gmail.com'"))
+        conn.commit()
+
 
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name)
