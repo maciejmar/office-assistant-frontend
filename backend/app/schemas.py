@@ -16,6 +16,15 @@ class AuthToken(BaseModel):
     accessToken: str
 
 
+class ForgotPasswordIn(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordIn(BaseModel):
+    token: str
+    password: str
+
+
 class SubscriberOut(BaseModel):
     id: int
     email: EmailStr

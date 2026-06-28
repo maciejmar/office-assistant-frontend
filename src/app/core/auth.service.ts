@@ -41,6 +41,14 @@ export class AuthService {
     return this.api.register(email, password).pipe(map(() => void 0));
   }
 
+  forgotPassword(email: string) {
+    return this.api.forgotPassword(email).pipe(map(() => void 0));
+  }
+
+  resetPassword(token: string, password: string) {
+    return this.api.resetPassword(token, password).pipe(map(() => void 0));
+  }
+
   logout() {
     if (environment.mockAuth) {
       this.tokens.clear();

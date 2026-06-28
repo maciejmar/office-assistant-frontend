@@ -3,6 +3,8 @@ import { authGuard } from './core/auth.guard';
 
 import { LoginComponent } from './pages/auth/login.component';
 import { RegisterComponent } from './pages/auth/register.component';
+import { ForgotPasswordComponent } from './pages/auth/forgot-password.component';
+import { ResetPasswordComponent } from './pages/auth/reset-password.component';
 import { LayoutComponent } from './pages/layout/layout.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { SubscribersComponent } from './pages/subscribers/subscribers.component';
@@ -19,6 +21,8 @@ export const routes: Routes = [
 
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
+  { path: 'forgot-password', component: ForgotPasswordComponent },
+  { path: 'reset-password/:token', component: ResetPasswordComponent },
 
   {
     path: 'app',

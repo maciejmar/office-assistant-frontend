@@ -13,6 +13,8 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:4200"
     cors_allow_credentials: bool = True
+    frontend_base_url: str = ""
+    password_reset_ttl_minutes: int = 30
 
     storage_dir: str = "./storage"
     ollama_url: str = "http://ollama:11434"

@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 
 @Component({
@@ -11,22 +11,22 @@ import { AuthService } from '../../core/auth.service';
   <div class="auth">
     <div class="card">
       <div class="badge">Office Assistant</div>
-      <h1>Login</h1>
-      <p class="lead">Welcome back. Enter your credentials to continue.</p>
+      <h1>Ustaw nowe haslo</h1>
+      <p class="lead">Wpisz nowe haslo do swojego konta.</p>
 
       <form [formGroup]="form" (ngSubmit)="submit()">
-        <label>Email</label>
-        <input type="email" formControlName="email" />
-
-        <label>Password</label>
+        <label>Nowe haslo</label>
         <input type="password" formControlName="password" />
+        <div class="error" *ngIf="form.controls.password.touched && form.controls.password.invalid">
+          Haslo musi miec min. 8 znakow.
+        </div>
 
-        <button [disabled]="form.invalid || loading">Log in</button>
+        <button type="submit" [disabled]="loading">Zmien haslo</button>
         <div class="error" *ngIf="error">{{error}}</div>
+        <div class="ok" *ngIf="ok">Haslo zostalo zmienione. Mozesz sie teraz zalogowac.</div>
       </form>
 
-      <p class="muted"><a routerLink="/forgot-password">Zapomniales hasla?</a></p>
-      <p class="muted">Nie masz konta? <a routerLink="/register">Zarejestruj sie</a></p>
+      <p class="muted"><a routerLink="/login">Wroc do logowania</a></p>
     </div>
   </div>
   `,
@@ -82,30 +82,43 @@ import { AuthService } from '../../core/auth.service';
     }
 
     .error { color: var(--danger); margin-top: 10px; }
+    .ok { color: var(--primary); margin-top: 10px; }
     .muted { margin-top: 16px; color: var(--muted); }
     a { color: var(--text); }
   `]
 })
-export class LoginComponent {
+export class ResetPasswordComponent {
   loading = false;
   error = '';
+  ok = false;
+  private token = '';
 
   form = new FormGroup({
-    email: new FormControl('', [Validators.required, Validators.email]),
-    password: new FormControl('', [Validators.required]),
+    password: new FormControl('', [Validators.required, Validators.minLength(8)]),
   });
 
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(private auth: AuthService, private route: ActivatedRoute, private router: Router) {
+    this.token = this.route.snapshot.paramMap.get('token') || '';
+  }
 
   submit() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
     this.error = '';
+    this.ok = false;
     this.loading = true;
 
-    const { email, password } = this.form.value;
-    this.auth.login(email!, password!).subscribe({
-      next: () => this.router.navigateByUrl('/app'),
+    const { password } = this.form.value;
+    this.auth.resetPassword(this.token, password!).subscribe({
+      next: () => {
+        this.ok = true;
+        setTimeout(() => this.router.navigateByUrl('/login'), 2000);
+      },
       error: (e) => {
-        this.error = e?.error?.message || 'Login failed';
+        this.error = e?.error?.detail || 'Link jest nieprawidlowy lub wygasl.';
         this.loading = false;
       },
       complete: () => { this.loading = false; },

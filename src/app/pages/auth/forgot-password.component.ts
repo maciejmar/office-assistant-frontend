@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 
 @Component({
@@ -11,22 +11,19 @@ import { AuthService } from '../../core/auth.service';
   <div class="auth">
     <div class="card">
       <div class="badge">Office Assistant</div>
-      <h1>Login</h1>
-      <p class="lead">Welcome back. Enter your credentials to continue.</p>
+      <h1>Zapomnialem hasla</h1>
+      <p class="lead">Podaj swoj e-mail. Jesli konto istnieje, wyslemy link do resetu hasla.</p>
 
       <form [formGroup]="form" (ngSubmit)="submit()">
         <label>Email</label>
         <input type="email" formControlName="email" />
 
-        <label>Password</label>
-        <input type="password" formControlName="password" />
-
-        <button [disabled]="form.invalid || loading">Log in</button>
+        <button [disabled]="form.invalid || loading">Wyslij link resetujacy</button>
         <div class="error" *ngIf="error">{{error}}</div>
+        <div class="ok" *ngIf="sent">Jesli to konto istnieje, link do resetu hasla zostal wyslany na podany adres.</div>
       </form>
 
-      <p class="muted"><a routerLink="/forgot-password">Zapomniales hasla?</a></p>
-      <p class="muted">Nie masz konta? <a routerLink="/register">Zarejestruj sie</a></p>
+      <p class="muted">Pamietasz haslo? <a routerLink="/login">Zaloguj sie</a></p>
     </div>
   </div>
   `,
@@ -82,30 +79,32 @@ import { AuthService } from '../../core/auth.service';
     }
 
     .error { color: var(--danger); margin-top: 10px; }
+    .ok { color: var(--primary); margin-top: 10px; }
     .muted { margin-top: 16px; color: var(--muted); }
     a { color: var(--text); }
   `]
 })
-export class LoginComponent {
+export class ForgotPasswordComponent {
   loading = false;
   error = '';
+  sent = false;
 
   form = new FormGroup({
     email: new FormControl('', [Validators.required, Validators.email]),
-    password: new FormControl('', [Validators.required]),
   });
 
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(private auth: AuthService) {}
 
   submit() {
     this.error = '';
+    this.sent = false;
     this.loading = true;
 
-    const { email, password } = this.form.value;
-    this.auth.login(email!, password!).subscribe({
-      next: () => this.router.navigateByUrl('/app'),
+    const { email } = this.form.value;
+    this.auth.forgotPassword(email!).subscribe({
+      next: () => { this.sent = true; },
       error: (e) => {
-        this.error = e?.error?.message || 'Login failed';
+        this.error = e?.error?.detail || 'Cos poszlo nie tak, sprobuj ponownie.';
         this.loading = false;
       },
       complete: () => { this.loading = false; },

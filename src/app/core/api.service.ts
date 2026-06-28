@@ -39,6 +39,12 @@ export class ApiService {
   logout() {
     return this.http.post(`${this.base}/auth/logout`, {}, { withCredentials: true });
   }
+  forgotPassword(email: string) {
+    return this.http.post(`${this.base}/auth/forgot-password`, { email });
+  }
+  resetPassword(token: string, password: string) {
+    return this.http.post(`${this.base}/auth/reset-password`, { token, password });
+  }
 
   // Subscribers
   listSubscribers() {
